@@ -9,6 +9,13 @@ def main() -> None:
     r.raise_for_status()
     d = r.json()["result"]
     conn = sqlite3.Connection("radio.sqlite3")
+    pa, pt = conn.execute(
+        "SELECT artist, title FROM radio_logs WHERE radio = ? ORDER BY dtime desc LIMIT 1",
+        ("deejay",),
+    ).fetchone() or ("", "")
+    if pa == d["artist"] and pt == d["title"]:
+        conn.close()
+        return
     conn.execute(
         "INSERT OR IGNORE INTO radio_logs (radio, dtime, artist, title) VALUES (?,?,?,?)",
         (
