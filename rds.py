@@ -14,7 +14,7 @@ def main() -> None:
     pa, pt = conn.execute(
         "SELECT artist, title FROM radio_logs WHERE radio = ? ORDER BY dtime desc LIMIT 1",
         ("rds",),
-    ).fetchone()
+    ).fetchone() or ("", "")
     if pa == d["artist"] and pt == d["title"]:
         conn.close()
         return
