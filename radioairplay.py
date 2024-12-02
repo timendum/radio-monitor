@@ -19,7 +19,7 @@ def main() -> None:
         rows.append((radio, day, time, author, title))
     conn = sqlite3.Connection("radio.sqlite3")
     conn.executemany(
-        "INSERT OR IGNORE INTO radioairplay_logs (radio, day, time, artist, title) VALUES (?,?,?,?)",
+        "INSERT OR IGNORE INTO radioairplay_logs (radio, day, time, artist, title) VALUES (?,?,?,?,?)",
         rows,
     )
     conn.commit()

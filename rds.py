@@ -1,7 +1,6 @@
-from datetime import datetime
-import sqlite3
-
 import requests
+
+import utils
 
 
 def main() -> None:
@@ -10,25 +9,7 @@ def main() -> None:
     d = r.json()["song_status"]["current_song"]
     if d["artist"] == "RDS":
         return
-    conn = sqlite3.Connection("radio.sqlite3")
-    pa, pt = conn.execute(
-        "SELECT artist, title FROM radio_logs WHERE radio = ? ORDER BY dtime desc LIMIT 1",
-        ("rds",),
-    ).fetchone() or ("", "")
-    if pa == d["artist"] and pt == d["title"]:
-        conn.close()
-        return
-    conn.execute(
-        "INSERT INTO radio_logs (radio, dtime, artist, title) VALUES (?,?,?,?)",
-        (
-            "rds",
-            datetime.now().timestamp(),
-            d["artist"],
-            d["title"],
-        ),
-    )
-    conn.commit()
-    conn.close()
+    utils.insert_into_radio("deejay", d["artist"], d["title"], None)
 
 
 if __name__ == "__main__":
