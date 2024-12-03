@@ -7,7 +7,7 @@ import requests
 import utils
 
 
-def main() -> None:
+def main() -> None | tuple[str, str, str]:
     r = requests.get(
         "https://cloud.rtl.it/api-play.rtl.it/media/1.0/live/1/radiovisione/-1/0/"
     )
@@ -36,10 +36,10 @@ def main() -> None:
     present = songInfo["present"]
     if present["class"] != "Music":
         return
-    utils.insert_into_radio(
+    return utils.insert_into_radio(
         "rtl", present["mus_art_name"], present["mus_sng_title"], None
     )
 
 
 if __name__ == "__main__":
-    main()
+    print(main())

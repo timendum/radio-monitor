@@ -3,7 +3,7 @@ import requests
 import utils
 
 
-def main() -> None:
+def main() -> None | tuple[str, str, str]:
     r = requests.get(
         "https://www.virginradio.it/custom_widget/finelco/getStreamInfo.jsp?",
         {
@@ -12,8 +12,8 @@ def main() -> None:
     )
     r.raise_for_status()
     d = r.json()
-    utils.insert_into_radio("virgin", d["artist"], d["song"], None)
+    return utils.insert_into_radio("virgin", d["artist"], d["song"], None)
 
 
 if __name__ == "__main__":
-    main()
+    print(main())

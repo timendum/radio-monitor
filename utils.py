@@ -4,7 +4,7 @@ import sqlite3
 
 def insert_into_radio(
     radio: str, artist: str, title: str, timestamp: None | float | int = None
-):
+) -> None | tuple[str, str, str]:
     artist = artist.strip()
     title = title.strip()
     conn = sqlite3.Connection("radio.sqlite3")
@@ -30,3 +30,4 @@ def insert_into_radio(
     )
     conn.commit()
     conn.close()
+    return radio, artist, title
