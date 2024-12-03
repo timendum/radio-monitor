@@ -8,9 +8,12 @@ import virgin
 
 if __name__ == "__main__":
     db_init.main()
-    deejay.main()
-    rds.main()
-    rtl.main()
-    r105.main()
-    virgin.main()
-    radioairplay.main()
+
+    modules = [deejay, rds, rtl, r105, virgin, radioairplay]
+    for modu in modules:
+        try:
+            modu.main()
+        except BaseException:
+            import traceback
+
+            traceback.print_exc()
