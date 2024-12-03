@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS "radioairplay_logs" (
 )
 """)
     conn.execute("""
+CREATE INDEX IF NOT EXISTS "radio_logs_radioidx" ON "radio_logs" (
+    "radio" TEXT NOT NULL
+)
+""")
+    conn.execute("""
 CREATE TABLE IF NOT EXISTS "radio_logs" (
     "id" INTEGER PRIMARY KEY,
     "radio" TEXT NOT NULL,
