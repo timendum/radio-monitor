@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS "radioairplay_logs" (
 """)
     conn.execute("""
 CREATE INDEX IF NOT EXISTS "radio_logs_radioidx" ON "radio_logs" (
-    "radio" TEXT NOT NULL
+    "radio"
 )
 """)
     conn.execute("""

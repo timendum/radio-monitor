@@ -1,18 +1,13 @@
-import requests
-
+import virgin
 import utils
 
 
 def main() -> None | tuple[str, str, str]:
-    r = requests.get(
+    artist, title = virgin.parse(
         "https://www.105.net/custom_widget/finelco/getStreamInfo.jsp",
-        {
-            "host": "https://icy.unitedradio.it/Radio105.aac",
-        },
+        "https://icy.unitedradio.it/Radio105.aac",
     )
-    r.raise_for_status()
-    d = r.json()
-    return utils.insert_into_radio("r105", d["artist"], d["song"], None)
+    return utils.insert_into_radio("r105", artist, title, None)
 
 
 if __name__ == "__main__":
