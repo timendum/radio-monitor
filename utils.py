@@ -11,7 +11,7 @@ def insert_into_radio(
     if not timestamp:
         timestamp = datetime.now().timestamp()
     pa, pt = conn.execute(
-        "SELECT artist, title FROM radio_logs WHERE radio = ? ORDER BY (dtime-?) asc LIMIT 1",
+        "SELECT artist, title FROM radio_logs WHERE radio = ? ORDER BY abs(dtime-?) asc LIMIT 1",
         (radio, timestamp),
     ).fetchone() or ("", "")
     if pa == artist and pt == title:
