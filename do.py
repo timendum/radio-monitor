@@ -1,3 +1,4 @@
+import capital
 import db_init
 import deejay
 import m2o
@@ -12,7 +13,7 @@ import virgin
 if __name__ == "__main__":
     db_init.main()
 
-    modules = [deejay, rds, rtl, r105, virgin, r101, m2o, radioairplay, spotify]
+    modules = [deejay, rds, rtl, r105, virgin, r101, m2o, capital, radioairplay, spotify]
     for modu in modules:
         try:
             modu.main()
