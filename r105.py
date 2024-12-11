@@ -1,5 +1,5 @@
-import virgin
 import utils
+import virgin
 
 
 def main() -> None | tuple[str, str, str]:

@@ -1,5 +1,5 @@
-from datetime import datetime
 import sqlite3
+from datetime import datetime
 
 
 def insert_into_radio(
@@ -16,7 +16,7 @@ def insert_into_radio(
     ).fetchone() or ("", "")
     if pa == artist and pt == title:
         conn.close()
-        return
+        return None
     if not timestamp:
         timestamp = datetime.now().timestamp()
     conn.execute(

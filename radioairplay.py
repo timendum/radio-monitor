@@ -1,8 +1,8 @@
-from datetime import date
 import sqlite3
+from datetime import date
 
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
 
 
 def main() -> None:
