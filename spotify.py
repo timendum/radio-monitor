@@ -120,8 +120,13 @@ SELECT lo.id, lo.artist, lo.title, lo.dtime, lo.radio
     for id, artist, title, dtime, radio in todos:
         release = find_releases(title, artist, token)
         if not release:
-            print(f"Not found ({id}): {artist} - {title}")
-            continue
+            if " X " in artist:
+                release = find_releases(title, artist[: artist.index(" X ")], token)
+                if not release:
+                    print(f"Not found ({id}): {artist} - {title}")
+                    continue
+            else:
+                continue
         if release.score < 0.8:
             print(
                 f"OK ({id}) {release.score}: {title} - {artist} ="
