@@ -29,6 +29,18 @@ CREATE TABLE IF NOT EXISTS "radio_logs" (
     UNIQUE ("radio", "dtime")
 )
 """)
+    conn.execute("""
+CREATE TABLE IF NOT EXISTS "radio_songs" (
+    "id" INTEGER PRIMARY KEY,
+    "radio" TEXT NOT NULL,
+    "dtime" INTEGER NOT NULL,
+    "artist" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "year" INT NOT NULL,
+    "country" TEXT NOT NULL,
+    UNIQUE ("radio", "dtime")
+)
+""")
     conn.commit()
     conn.close()
 
