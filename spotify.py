@@ -125,7 +125,7 @@ SELECT lo.id, lo.artist, lo.title, lo.dtime, lo.radio
         if release.score < 0.8:
             print(
                 f"OK ({id}) {release.score}: {title} - {artist} ="
-                + " {release.title} - {release.artist} - {release.year} - {release.country}"
+                + f" {release.title} - {release.artist} - {release.year} - {release.country}"
             )
         to_insert.append(
             (
