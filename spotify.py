@@ -46,10 +46,9 @@ def find_releases(title: str, artist: str, token: str) -> Record | None:
     title = title.replace('"', "")
     artist = artist.replace('"', "")
     # get only the first artist in a list
-    if "," in artist:
-        artist = artist[: artist.index(",")]
-    if " ft" in artist:
-        artist = artist[: artist.index(" ft")]
+    for sep in (",", "&", " ft", " feat", " e "):
+        if sep in artist:
+            artist = artist[: artist.index(sep)]
 
     # Clean title
     # - case 'lorem ipsum (mutam edition)'
@@ -100,9 +99,34 @@ def find_releases(title: str, artist: str, token: str) -> Record | None:
     if not findings:
         if best_skipped:
             r = best_skipped
-            print(f"Skipped: {title} - {artist} = {r.title} - {r.artist}")
+            # print(f"Skipped: {title} - {artist} = {r.title} - {r.artist}")
         return None
     return findings[0]
+
+
+def spotify_find(title: str, artist: str, token: str) -> Record | None:
+    release = find_releases(title, artist, token)
+    if not release:
+        if " X " in artist:
+            release = find_releases(title, artist[: artist.index(" X ")], token)
+            if release:
+                return release
+        return None
+    return release
+
+
+def db_find(title: str, artist: str, conn: sqlite3.Connection) -> Record | None:
+    drelease = conn.execute(
+        """
+SELECT okyear, okcountry, oktitle, okartist, 1
+    FROM song_matches
+    WHERE title = ?
+        AND artist = ?""",
+        (title, artist),
+    ).fetchone()
+    if drelease:
+        return Record(*drelease)
+    return None
 
 
 def main() -> None:
@@ -113,25 +137,43 @@ SELECT lo.id, lo.artist, lo.title, lo.dtime, lo.radio
     FROM radio_logs lo
     LEFT JOIN radio_songs so
         ON so.id = lo.id
+    LEFT JOIN song_skipped ss
+        ON ss.title = lo.title
+        AND ss.artist = lo.artist
     WHERE so.id is null
+        AND ss.id is null
     ORDER BY lo.id DESC
     LIMIT 20""").fetchall()
     to_insert = []
+    to_matches = []
+    to_skip = []
+    to_check = []
     for id, artist, title, dtime, radio in todos:
-        release = find_releases(title, artist, token)
+        release = db_find(title, artist, conn)
         if not release:
-            if " X " in artist:
-                release = find_releases(title, artist[: artist.index(" X ")], token)
-                if not release:
-                    print(f"Not found ({id}): {artist} - {title}")
-                    continue
+            release = spotify_find(title, artist, token)
+            if release and release.score >= 1:
+                to_matches.append(
+                    (
+                        artist,
+                        title,
+                        release.artist,
+                        release.title,
+                        release.year,
+                        release.country,
+                    )
+                )
+            elif release and release.score < 0.8:
+                # print(
+                #     f"OK ({id}) {release.score}: {title} - {artist} ="
+                #     + f" {release.title} - {release.artist} - {release.year} - {release.country}"
+                # )
+                to_check.append((id,))
             else:
-                continue
-        if release.score < 0.8:
-            print(
-                f"OK ({id}) {release.score}: {title} - {artist} ="
-                + f" {release.title} - {release.artist} - {release.year} - {release.country}"
-            )
+                # print(f"Not found ({id}): {artist} - {title}")
+                to_skip.append((artist, title))
+        if not release:
+            continue
         to_insert.append(
             (
                 id,
@@ -150,6 +192,26 @@ SELECT lo.id, lo.artist, lo.title, lo.dtime, lo.radio
         (id, radio, dtime, artist, title, year, country) VALUES
         (?,  ?,     ?,     ?,      ?,     ?,    ?)""",
         to_insert,
+    )
+    conn.executemany(
+        """
+    INSERT OR IGNORE INTO song_matches
+        (artist, title, okartist, oktitle, okyear, okcountry) VALUES
+        (?,      ?,     ?,        ?,       ?,      ?)""",
+        to_matches,
+    )
+    conn.executemany(
+        """
+    INSERT OR IGNORE INTO song_skipped
+        (artist, title) VALUES
+        (?,      ?)""",
+        to_skip,
+    )
+    conn.executemany(
+        """
+    INSERT OR IGNORE INTO song_check
+        (id) VALUES (?)""",
+        to_check,
     )
     conn.commit()
     conn.close()
