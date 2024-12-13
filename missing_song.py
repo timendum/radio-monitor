@@ -48,12 +48,11 @@ insert or ignore into song_matches
                 (artist, title, nartist, ntitle, nyear, ncountry),
             )
             conn.execute("delete from song_skipped where id = ?", (id,))
+            conn.commit()
             print(" -> Saved!")
         else:
-            conn.commit()
             continue
         break
-    conn.commit()
 
 
 if __name__ == "__main__":

@@ -56,8 +56,9 @@ join radio_songs s
 where l.id = ?""",
                         (id,),
                     )
-                    print(" -> Saved!")
                     conn.execute("delete from song_check where id = ?", (id,))
+                    print(" -> Saved!")
+                    conn.commit()
                     continue
                 if newid == -id:
                     conn.execute("delete from song_check where id = ?", (id,))
@@ -69,6 +70,7 @@ where l.id = ?""",
                         (?,      ?)""",
                         (lartist, ltitle),
                     )
+                    conn.commit()
                     print(" -> Deleted")
                     continue
             except ValueError:
@@ -77,10 +79,8 @@ where l.id = ?""",
                 break
             print(" -> Skip")
         else:
-            conn.commit()
             continue
         break
-    conn.commit()
 
 
 if __name__ == "__main__":
