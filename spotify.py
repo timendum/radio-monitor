@@ -42,20 +42,26 @@ def calc_score(otitle: str, oartist: str, title: str, artist: str) -> float:
     return (rtitle + rartist) / 2
 
 
-def find_releases(title: str, artist: str, token: str) -> Record | None:
-    title = title.replace('"', "")
-    artist = artist.replace('"', "")
+def clear_artist(artist: str) -> str:
     # get only the first artist in a list
     for sep in (",", "&", " ft", " feat", " e "):
         if sep in artist:
-            artist = artist[: artist.index(sep)]
+            artist = artist[: artist.index(sep)].strip()
+    return artist
 
-    # Clean title
-    # - case 'lorem ipsum (mutam edition)'
-    try:
-        title = title[: title.index("(")].strip()
-    except BaseException:
-        pass
+
+def clear_title(title: str) -> str:
+    # get only the first artist in a list
+    for sep in ("(", " - "):
+        if sep in title and title.index(sep) > 2:
+            title = title[: title.index(sep)].strip()
+    return title
+
+
+def find_releases(title: str, artist: str, token: str) -> Record | None:
+    title = clear_title(title)
+    artist = clear_artist(artist)
+
     # fetch spotify API
     r = requests.get(
         "https://api.spotify.com/v1/search",

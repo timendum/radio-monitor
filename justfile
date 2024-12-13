@@ -1,3 +1,5 @@
+set dotenv-load
+
 last:
   @sqlite3 radio.sqlite3 -readonly -table "select * from radio_logs order by dtime desc limit 20;"
 
@@ -6,3 +8,13 @@ run:
 
 year:
   @sqlite3 radio.sqlite3 -readonly -table "select radio, year, count(id) from radio_songs group by radio, year;"
+
+
+checks:
+  uv run check_song.py
+
+skipped:
+  @sqlite3 radio.sqlite3 -readonly -table "{{skippedsql}}"
+
+missings:
+  uv run missing_song.py
