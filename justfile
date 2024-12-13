@@ -13,8 +13,5 @@ year:
 checks:
   uv run check_song.py
 
-skipped:
-  @sqlite3 radio.sqlite3 -readonly -table "{{skippedsql}}"
-
 missings:
   uv run missing_song.py
