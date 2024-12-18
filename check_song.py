@@ -28,7 +28,9 @@ def main() -> None:
     join radio_songs s
         ON s.id = l.id
     order by l.id asc
-    limit 10""")
+    limit 1""")
+        if not to_check:
+            break
         for id, ltitle, stitle, lartist, sartist, syear, scountry in to_check.fetchall():
             print(f"ID: {id}")
             print_ascii_table(
@@ -56,13 +58,13 @@ join radio_songs s
 where l.id = ?""",
                         (id,),
                     )
-                    conn.execute("delete from song_check where id = ?", (id,))
+                    conn.execute("delete from song_check where id in (select id from radio_logs l where l.title = ? and l.artist = ?)", (ltitle,lartist))
                     print(" -> Saved!")
                     conn.commit()
                     continue
                 if newid == -id:
-                    conn.execute("delete from song_check where id = ?", (id,))
-                    conn.execute("delete from radio_songs where id = ?", (id,))
+                    conn.execute("delete from song_check where id in (select id from radio_logs l where l.title = ? and l.artist = ?)", (ltitle,lartist))
+                    conn.execute("delete from radio_songs where id in (select id from radio_logs l where l.title = ? and l.artist = ?)", (ltitle,lartist))
                     conn.execute(
                         """
                     INSERT OR IGNORE INTO song_skipped
