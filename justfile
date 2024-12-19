@@ -1,5 +1,8 @@
 set dotenv-load
 
+default:
+  just --list
+
 last:
   @sqlite3 radio.sqlite3 -readonly -table "select * from radio_logs order by dtime desc limit 20;"
 
