@@ -2,6 +2,7 @@ import base64
 import os
 import sqlite3
 from difflib import SequenceMatcher
+from functools import cache
 from time import sleep
 from typing import NamedTuple
 
@@ -18,6 +19,7 @@ class Record(NamedTuple):
     score: float
 
 
+@cache
 def get_token() -> str:
     r = requests.post(
         "https://accounts.spotify.com/api/token",
@@ -85,10 +87,14 @@ def find_releases(title: str, artist: str, token: str) -> Record | None:
             country = item["external_ids"]["isrc"][:2]
         except BaseException:
             pass
+        title = item["name"]
+        for suff in ("(with ", "(feat"):
+            if suff in title and title.find(suff) > 2:
+                title = title[: title.find(suff)].strip()
         r = Record(
             year=int(item["album"]["release_date"][:4]),
             country=country,
-            title=item["name"],
+            title=title,
             artist=", ".join(a["name"] for a in item["artists"]),
             score=max(
                 [calc_score(title, artist, item["name"], a["name"]) for a in item["artists"]]
