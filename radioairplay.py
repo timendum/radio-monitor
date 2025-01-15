@@ -13,6 +13,8 @@ def main() -> None:
     day = date.today().isoformat()
     for box in soup.find_all(class_="date-box"):
         author = box.find(class_="head-two").get_text().strip()
+        if not author:
+            continue
         title = box.find(class_="head-one").get_text().strip()
         radio = box.find("img")["title"].strip()
         time = box.find(class_="dj-time").get_text().strip()
