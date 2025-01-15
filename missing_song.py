@@ -4,7 +4,7 @@ from check_song import print_ascii_table
 from spotify import Record, find_releases, get_token
 
 
-def query_spotify(token) -> Record | None:
+def query_spotify(token: str) -> Record | None:
     title = input("Title (for spotify): ").strip()
     if not title:
         return None
@@ -20,7 +20,20 @@ def query_spotify(token) -> Record | None:
     print(" -> Found")
     print_ascii_table([[r.title, r.artist, r.year, r.country]])
     decision = input("Ok (Commit?): ").strip()
-    if decision.lower == "ok" or decision.lower() == "k":
+    if decision.lower == "ok" or decision.lower() in ("k", "o"):
+        return r
+    return None
+
+
+def retry_spotify(title: str, artist: str, token: str) -> Record | None:
+    r = find_releases(title, artist, token)
+    if not r:
+        print(" -> Not found")
+        return None
+    print(" -> Found")
+    print_ascii_table([[r.title, r.artist, r.year, r.country]])
+    decision = input("Ok (Commit?): ").strip()
+    if decision.lower == "ok" or decision.lower() in ("k", "o"):
         return r
     return None
 
@@ -65,11 +78,23 @@ def main() -> None:
             last_id = id
             print(f"ID: {id}")
             print_ascii_table([[title, artist]])
-            decision = input("Action (quit,spotify,ignore,enter): ").strip().lower()
+            decision = input("Action (quit,retry,spotify,ignore,enter): ").strip().lower()
             r = None
             match decision:
                 case "q":
                     break
+                case "r":
+                    r = retry_spotify(title, artist, token)
+                    if not r:
+                        decision = input("Action (ignore,enter): ").strip().lower()
+                        match decision:
+                            case "e":
+                                r = ask_user()
+                            case "i":
+                                r = ask_user()
+                            case _:
+                                print(" -> Skipped!")
+                                continue
                 case "s":
                     r = query_spotify(token)
                     if not r:

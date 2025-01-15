@@ -145,17 +145,17 @@ def main() -> None:
     token = get_token()
     conn = sqlite3.Connection("radio.sqlite3")
     todos = conn.execute("""
-SELECT lo.id, lo.artist, lo.title, lo.dtime, lo.radio
-    FROM radio_logs lo
-    LEFT JOIN radio_songs so
-        ON so.id = lo.id
-    LEFT JOIN song_skipped ss
-        ON ss.title = lo.title
-        AND ss.artist = lo.artist
-    WHERE so.id is null
-        AND ss.id is null
-    ORDER BY lo.id DESC
-    LIMIT 20""").fetchall()
+        SELECT lo.id, lo.artist, lo.title, lo.dtime, lo.radio
+        FROM radio_logs lo
+        LEFT JOIN radio_songs so
+            ON so.id = lo.id
+        LEFT JOIN song_skipped ss
+            ON ss.title = lo.title
+            AND ss.artist = lo.artist
+        WHERE so.id is null
+            AND ss.id is null
+        ORDER BY lo.id DESC
+        LIMIT 20""").fetchall()
     to_insert = []
     to_matches = []
     to_skip = []

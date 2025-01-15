@@ -24,12 +24,12 @@ def main() -> None:
     conn = sqlite3.Connection("radio.sqlite3")
     while True:
         to_check = conn.execute("""
-                SELECT l.id, l.title, s.title, l.artist, s.artist, s.year, s.country
-                FROM radio_logs l
-                JOIN song_check c ON c.id = l.id
-                JOIN radio_songs s ON s.id = l.id
-                ORDER BY l.id ASC
-                """).fetchall()
+            SELECT l.id, l.title, s.title, l.artist, s.artist, s.year, s.country
+            FROM radio_logs l
+            JOIN song_check c ON c.id = l.id
+            JOIN radio_songs s ON s.id = l.id
+            ORDER BY l.id ASC
+            """).fetchall()
         if not to_check:
             break
         for id, ltitle, stitle, lartist, sartist, syear, scountry in to_check:
@@ -76,9 +76,9 @@ def remove_song(conn, _, ltitle, lartist):
     )
     conn.execute(
         """
-                        INSERT OR IGNORE INTO song_skipped
-                        (artist, title) VALUES
-                        (?,      ?)""",
+        INSERT OR IGNORE INTO song_skipped
+        (artist, title) VALUES
+        (?,      ?)""",
         (lartist, ltitle),
     )
     conn.commit()
@@ -88,14 +88,14 @@ def remove_song(conn, _, ltitle, lartist):
 def save_song_match(conn, id, ltitle, lartist):
     conn.execute(
         """
-                        INSERT OR IGNORE INTO song_matches
-                            (artist,  title,   okartist, oktitle, okyear, okcountry)
-                        SELECT
-                            l.artist, l.title, s.artist, s.title, s.year, s.country
-                        FROM radio_logs l
-                        JOIN song_check c ON c.id = l.id
-                        JOIN radio_songs s ON s.id = l.id
-                        WHERE l.id = ?""",
+        INSERT OR IGNORE INTO song_matches
+            (artist,  title,   okartist, oktitle, okyear, okcountry)
+        SELECT
+            l.artist, l.title, s.artist, s.title, s.year, s.country
+        FROM radio_logs l
+        JOIN song_check c ON c.id = l.id
+        JOIN radio_songs s ON s.id = l.id
+        WHERE l.id = ?""",
         (id,),
     )
     conn.execute(
