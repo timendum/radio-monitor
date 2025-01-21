@@ -176,10 +176,16 @@ def main() -> None:
                     )
                 )
             elif release and release.score < 0.8:
-                # print(
-                #     f"OK ({id}) {release.score}: {title} - {artist} ="
-                #     + f" {release.title} - {release.artist} - {release.year} - {release.country}"
-                # )
+                to_matches.append(
+                    (
+                        artist,
+                        title,
+                        release.artist,
+                        release.title,
+                        release.year,
+                        release.country,
+                    )
+                )
                 to_check.append((id,))
             else:
                 # print(f"Not found ({id}): {artist} - {title}")
