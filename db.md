@@ -6,7 +6,7 @@
 | id            | id from `radio_logs` |
 | radio         | name of the radio |
 | dtime         | unix timestamp of the song |
-| artist        | normalized name of the artist | 
+| artist        | normalized name of the artist |
 | title         | normalized title of the song |
 | okyear        | normalized year of the song | 
 | okcountry     | normalized country code of the song |
@@ -20,7 +20,7 @@
 | id           | id of the record |
 | radio        | name of the radio |
 | dtime        | unix timestamp of the song |
-| artist       | captured name of the artist | 
+| artist       | captured name of the artist |
 | title        | captured title of the song |
 
 
@@ -31,13 +31,13 @@ Between captured song and normalized song infos.
 | `song_matches` | content |
 |----------------|---------|
 | id             | id of the match |
-| artist         | captured name of the artist | 
+| artist         | captured name of the artist |
 | title          | captured title of the song |
-| okartist       | normalized name of the artist | 
+| okartist       | normalized name of the artist |
 | oktitle        | normalized title of the song |
-| okyear         | normalized year of the song | 
+| okyear         | normalized year of the song |
 | okcountry      | normalized country code of the song |
-`
+
 Unique by `artist` and `title`.
 
 ## Songs to be checked
