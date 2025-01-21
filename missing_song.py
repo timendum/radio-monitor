@@ -1,7 +1,7 @@
 import sqlite3
 
 from check_song import print_ascii_table
-from spotify import Record, find_releases, get_token
+from spotify import Record, db_find, find_releases, get_token
 
 
 def query_spotify(token: str) -> Record | None:
@@ -67,10 +67,13 @@ def main() -> None:
     while True:
         to_check = conn.execute(
             """
-            SELECT id, title, artist
-            FROM song_skipped
-            WHERE id > ?
-            ORDER BY id ASC
+            SELECT ss.id, ss.title, ss.artist
+            FROM song_skipped as ss
+            LEFT JOIN song_matches as sm
+            ON sm.title = ss.title AND sm.artist = ss.artist
+            WHERE ss.id > ?
+            AND sm.id IS NULL
+            ORDER BY ss.id ASC
             LIMIT 10""",
             (last_id,),
         )
