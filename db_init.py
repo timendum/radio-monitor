@@ -66,6 +66,11 @@ CREATE TABLE IF NOT EXISTS "song_check" (
     "id" INTEGER PRIMARY KEY
 )
 """)
+    conn.execute("""
+CREATE TABLE IF NOT EXISTS "log_ignored" (
+    "id" INTEGER PRIMARY KEY
+)
+""")
     conn.commit()
     conn.close()
 

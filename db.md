@@ -60,3 +60,11 @@ Songs without infos.
 | title          | captured title of the song |
 
 Unique by `artist` and `title`.
+
+## Ignored songs
+
+Song captured by scrapers and ignored.
+
+| `log_ignored` | content |
+|--------------|---------|
+| id           | id of the record from `radio_logs` |

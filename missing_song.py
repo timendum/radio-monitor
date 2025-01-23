@@ -71,8 +71,11 @@ def main() -> None:
             FROM song_skipped as ss
             LEFT JOIN song_matches as sm
             ON sm.title = ss.title AND sm.artist = ss.artist
+            LEFT JOIN log_ignored as li
+            ON li.id = ss.id
             WHERE ss.id > ?
             AND sm.id IS NULL
+            AND li.id IS NULL
             ORDER BY ss.id ASC
             LIMIT 10""",
             (last_id,),
@@ -83,7 +86,7 @@ def main() -> None:
                 continue
             print(f"ID: {id}")
             print_ascii_table([[title, artist]])
-            decision = input("Action (quit,retry,spotify,ignore,enter): ").strip().lower()
+            decision = input("Action (quit,retry,spotify,iGnore,enter): ").strip().lower()
             r = None
             match decision:
                 case "q":
@@ -91,7 +94,7 @@ def main() -> None:
                 case "r":
                     r = retry_spotify(title, artist, token)
                     if not r:
-                        decision = input("Action (ignore,enter): ").strip().lower()
+                        decision = input("Action (skip,enter): ").strip().lower()
                         match decision:
                             case "e":
                                 r = ask_user()
@@ -109,6 +112,15 @@ def main() -> None:
                     r = ask_user()
                 case "i":
                     r = ask_user()
+                case "g":
+                    conn.execute(
+                        """
+                        INSERT OR IGNORE INTO log_ignored
+                        (id) values (?)""",
+                        (id,),
+                    )
+                    conn.commit()
+
                 case _:
                     print(" -> Skipped!")
                     continue
