@@ -35,6 +35,8 @@ def get_token() -> str:
 
 def calc_score(otitle: str, oartist: str, title: str, artist: str) -> float:
     otitle, oartist, title, artist = otitle.lower(), oartist.lower(), title.lower(), artist.lower()
+    oartist, artist = clear_artist(oartist), clear_artist(artist)
+    otitle, title = clear_title(otitle), clear_title(title)
     try:
         title = title[: title.index("(")].strip()
     except BaseException:
