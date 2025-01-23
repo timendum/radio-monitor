@@ -77,7 +77,7 @@ def main() -> None:
             AND sm.id IS NULL
             AND li.id IS NULL
             ORDER BY ss.id ASC
-            LIMIT 10""",
+            LIMIT 1""",
             (last_id,),
         )
         for id, title, artist in to_check.fetchall():
