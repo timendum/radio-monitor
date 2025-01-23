@@ -79,6 +79,8 @@ def main() -> None:
         )
         for id, title, artist in to_check.fetchall():
             last_id = id
+            if db_find(title, artist, conn) is not None:
+                continue
             print(f"ID: {id}")
             print_ascii_table([[title, artist]])
             decision = input("Action (quit,retry,spotify,ignore,enter): ").strip().lower()

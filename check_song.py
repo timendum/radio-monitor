@@ -1,6 +1,8 @@
 import sqlite3
 from typing import Any
 
+from spotify import db_find
+
 
 def print_ascii_table(data: list[list[Any]]) -> None:
     """Prints a list of lists as an ASCII table."""
@@ -33,6 +35,8 @@ def main() -> None:
         if not to_check:
             break
         for id, ltitle, stitle, lartist, sartist, syear, scountry in to_check:
+            if db_find(ltitle, lartist, conn) is not None:
+                continue
             print(f"ID: {id}")
             print_ascii_table(
                 [
