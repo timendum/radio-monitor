@@ -9,3 +9,4 @@ wheels/
 # Virtual environments
 .venv
 radio.sqlite3
+.env

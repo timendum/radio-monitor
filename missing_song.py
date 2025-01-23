@@ -80,7 +80,10 @@ def main() -> None:
             LIMIT 1""",
             (last_id,),
         )
-        for id, title, artist in to_check.fetchall():
+        rows = to_check.fetchall()
+        if not rows:
+            break
+        for id, title, artist in rows:
             last_id = id
             if db_find(title, artist, conn) is not None:
                 continue
