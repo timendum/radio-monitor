@@ -94,15 +94,8 @@ def main() -> None:
                 case "r":
                     r = retry_spotify(title, artist, token)
                     if not r:
-                        decision = input("Action (skip,enter): ").strip().lower()
-                        match decision:
-                            case "e":
-                                r = ask_user()
-                            case "i":
-                                r = ask_user()
-                            case _:
-                                print(" -> Skipped!")
-                                continue
+                        last_id -= 1
+                        continue
                 case "s":
                     r = query_spotify(token)
                     if not r:
@@ -120,7 +113,7 @@ def main() -> None:
                         (id,),
                     )
                     conn.commit()
-
+                    print(" -> Ignored!")
                 case _:
                     print(" -> Skipped!")
                     continue
