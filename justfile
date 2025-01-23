@@ -20,3 +20,16 @@ cleandb:
 
 missings:
   uv run missing_song.py
+
+sql_missing := '
+SELECT COUNT(ss.id) as song_missing
+FROM song_skipped as ss
+LEFT JOIN song_matches as sm
+ON sm.title = ss.title AND sm.artist = ss.artist
+LEFT JOIN log_ignored as li
+ON li.id = ss.id
+WHERE sm.id IS NULL
+AND li.id IS NULL;'
+
+cmissing:
+  @sqlite3 radio.sqlite3 -readonly -table "{{sql_missing}}"
