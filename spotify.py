@@ -48,7 +48,8 @@ def calc_score(otitle: str, oartist: str, title: str, artist: str) -> float:
 
 def clear_artist(artist: str) -> str:
     # get only the first artist in a list
-    for sep in (",", "&", " ft", " feat", " e "):
+    artist = artist.lower()
+    for sep in (",", "&", " ft", " feat", " e ", " and "):
         if sep in artist:
             artist = artist[: artist.index(sep)].strip()
     return artist
