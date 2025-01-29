@@ -42,6 +42,8 @@ def main() -> None:
         for id, ltitle, stitle, lartist, sartist, syear, scountry in to_check:
             last_id = id
             if db_find(ltitle, lartist, conn) is not None:
+                conn.execute("DELETE FROM song_check WHERE id = ?", (id,))
+                conn.commit()
                 continue
             ncount = conn.execute(
                 """
