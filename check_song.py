@@ -26,14 +26,17 @@ def main() -> None:
     conn = sqlite3.Connection("radio.sqlite3")
     last_id = -1
     while True:
-        to_check = conn.execute("""
+        to_check = conn.execute(
+            """
             SELECT l.id, l.title, s.title, l.artist, s.artist, s.year, s.country
             FROM radio_logs l
             JOIN song_check c ON c.id = l.id
             JOIN radio_songs s ON s.id = l.id
             WHERE l.id > ?
             ORDER BY l.id ASC
-            """).fetchall()
+            """,
+            (last_id,),
+        ).fetchall()
         if not to_check:
             break
         for id, ltitle, stitle, lartist, sartist, syear, scountry in to_check:
@@ -47,8 +50,7 @@ def main() -> None:
                 JOIN song_check c ON c.id = l.id
                 JOIN radio_songs s ON s.id = l.id
                 ORDER BY l.id ASC
-                """,
-                (last_id,),
+                """
             ).fetchone()
             print(f"ID: {id} (todo: {ncount[0]})")
             print_ascii_table(
