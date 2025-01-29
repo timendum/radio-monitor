@@ -40,13 +40,16 @@ def main() -> None:
             last_id = id
             if db_find(ltitle, lartist, conn) is not None:
                 continue
-            ncount = conn.execute("""
+            ncount = conn.execute(
+                """
                 SELECT COUNT(l.id)
                 FROM radio_logs l
                 JOIN song_check c ON c.id = l.id
                 JOIN radio_songs s ON s.id = l.id
                 ORDER BY l.id ASC
-                """).fetchone()
+                """,
+                (last_id,),
+            ).fetchone()
             print(f"ID: {id} (todo: {ncount[0]})")
             print_ascii_table(
                 [
