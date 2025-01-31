@@ -9,7 +9,9 @@ def parse(url: str) -> tuple[str, str]:
     r = requests.get(url)
     r.raise_for_status()
     d = r.json()
-    m = re.match(r"^(.+?) ([^a-z]+)$", d["title"])
+    m = re.match(r"^(.+?) ([^a-z\)]+)$", d["title"])
+    if not m:
+        m = re.match(r"^(.+?) ([^a-z]+)$", d["title"])
     return m.groups()[1], m.groups()[0]
 
 
