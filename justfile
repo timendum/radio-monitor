@@ -4,16 +4,10 @@ default:
   just --list
 
 run:
-  @uv run --env-file .env do.py
-
-checks:
-  uv run check_song.py
+  @uv run --env-file .env python -m monitor.do
 
 resetdb:
-  uv run reset_db.py
-
-missings:
-  uv run missing_song.py
+  uv run --env-file .env python -m monitor.reset_db
 
 sql_last := "
 SELECT
@@ -34,6 +28,3 @@ ORDER BY p.observed_at DESC
 
 last:
   @sqlite3 radio.sqlite3 -readonly -table "{{sql_last}}"
-
-cmissing:
-  @sqlite3 radio.sqlite3 -readonly -table ""
