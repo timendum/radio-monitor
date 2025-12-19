@@ -11,7 +11,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
 
 def init_data(conn: sqlite3.Connection) -> None:
     base = Path(__file__).parent / Path("sql")
-    with (base / Path("db_init.sql")).open("rt") as fi:
+    with (base / Path("data_init.sql")).open("rt") as fi:
         conn.executescript(fi.read())
     conn.commit()
 
