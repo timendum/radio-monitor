@@ -1,4 +1,4 @@
-from monitor import spotify
+from monitor import smatcher
 from monitor.radio import do
 
 
@@ -6,7 +6,7 @@ def main() -> None:
     do.main()
 
     try:
-        spotify.main()
+        smatcher.main()
     except BaseException:
         import traceback
 
