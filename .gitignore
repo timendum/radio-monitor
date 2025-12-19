@@ -8,5 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
-radio.sqlite3
+radio.sqlite3*
 .env
+*backup.sql

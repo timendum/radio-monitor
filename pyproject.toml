@@ -1,10 +1,12 @@
 [project]
 name = "radio-monitor"
-version = "0.1.0"
+version = "0.2.0"
 description = "Monitor italian radio"
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = ["requests", "beautifulsoup4"]
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+]
 
 [tool.ruff]
 lint.select = [
