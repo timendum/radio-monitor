@@ -94,6 +94,9 @@ ORDER BY p.inserted_at ASC
 LIMIT 20""").fetchall()
 
 
+RES_TODO = Candidate((Song("TODO", "TODO", (), None, 0, "", 0), None), 0, "todo")
+
+
 def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection):
     # SONG
     conn.executemany(
@@ -112,7 +115,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             )
             for cl in candidates.values()
             for c in cl
-            if c.song[0] is not None
+            if c != RES_TODO and c.song[0] is not None
         ),
     )
     # artist
@@ -125,7 +128,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             (p,)
             for cl in candidates.values()
             for c in cl
-            if c.song[0] is not None
+            if c != RES_TODO and c.song[0] is not None
             for p in c.song[0].l_performers
         ),
     )
@@ -140,7 +143,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             (c.song[0].title, c.song[0].s_performers, p)
             for cl in candidates.values()
             for c in cl
-            if c.song[0] is not None
+            if c != RES_TODO and c.song[0] is not None
             for p in c.song[0].l_performers
         ),
     )
@@ -160,38 +163,28 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
     )
 
 
-def save_skipped(items: list[tuple[int, str, str]], conn: sqlite3.Connection):
-    conn.executemany(
-        """
-    INSERT INTO play_resolution
-    (play_id, song_id, chosen_score, status) VALUES
-    (?,       (SELECT s.song_id from song s where song_title = 'TODO' AND song_performers = 'TODO'),
-                       ?,               ?     )""",
-        ((i[0], 0, "pending") for i in items),
-    )
-
-
-RES_TODO = Candidate((Song("TODO", "TODO", (), None, 0, "", 0), None), 0, "todo")
-
-
 def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, str]:
     resolution = None
     status = "pending"
+    if not candidates_list:
+        return RES_TODO, "pending"
     if candidates_list != sorted(candidates_list, key=lambda c: c.score, reverse=True):
         raise ValueError("Candidates list not sorted")
-    if candidates_list[0].score < 0.5:
-        # Low confidence, no auto-resolution
-        return RES_TODO, "pending"
-    # Assert: 0.5 < Best core
+    if not candidates_list:
+        raise ValueError("No candidates")
     if candidates_list[0].score >= 0.9:
         # High confidence, resolved
         resolution = candidates_list[0]
         status = "auto"
-    # Assert: 0.5 < Best core < 0.9
-    if not resolution and len(candidates_list) < 2:
+    # Assert: 0.6 < Best core < 0.9
+    if not resolution and candidates_list[0].score > 0.6 and len(candidates_list) < 2:
         # Good confidence, no other options, resolved
         resolution = candidates_list[0]
         status = "auto"
+    if not resolution and len(candidates_list) == 1:
+        # Low confidence, no other options, resolved
+        resolution = candidates_list[0]
+        status = "pending"
     # Assert:0.5 < Best core < 0.9 ; more than 1 candidate
     if not resolution and (candidates_list[0].score - candidates_list[1].score) > 0.2:
         # Good confidence, clear margin over next option, resolved
@@ -205,8 +198,6 @@ def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, st
 
 def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection):
     for play_id, candidates_list in candidates.items():
-        if not candidates_list:
-            continue
         resolution, status = find_best_candidate(candidates_list)
         # Save to DB
         song_id = None
@@ -236,7 +227,6 @@ def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
 def main() -> None:
     conn = utils.conn_db()
     candidates: dict[int, list[Candidate]] = {}
-    to_skip: list[tuple[int, str, str]] = []
     todos = find_play_todo(conn)
     for play_id, title, performer in todos:
         # DB first
@@ -249,11 +239,10 @@ def main() -> None:
                 candidates[play_id] = [
                     Candidate((Song.from_spotify(ss), None), ss.score, "spotify") for ss in releases
                 ]
+            sleep(1)
         if play_id not in candidates:
-            to_skip.append((play_id, performer, title))
-        sleep(1)
-        if not song_match:
-            continue
+            # Generate one fake candidate
+            candidates[play_id] = [RES_TODO]
     save_candidates(candidates, conn)
     conn.commit()
     save_resolution(candidates, conn)
