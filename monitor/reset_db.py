@@ -33,19 +33,19 @@ def backup_tables(tables: list[str], out_sql_path: str, conn: sqlite3.Connection
 
 
 def main() -> None:
-    conn = utils.conn_db()
-    backup_tables(["country", "station", "play"], "play_backup.sql", conn)
-    backup_tables(["artist", "song", "song_artist"], "songs_backup.sql", conn)
-    conn.close()
+    with utils.conn_db() as conn:
+        backup_tables(["country", "station", "play"], "play_backup.sql", conn)
+        backup_tables(["artist", "song", "song_artist"], "songs_backup.sql", conn)
+
     Path("radio.sqlite3").unlink()
-    conn = utils.conn_db()
-    db_init.init_schema(conn)
-    conn.executescript(Path("play_backup.sql").read_text(encoding="utf-8"))
-    print("Restored play data")
-    db_init.init_data(conn)
-    conn.commit()
-    conn.close()
+    with utils.conn_db() as conn:
+        db_init.init_schema(conn)
+        conn.executescript(Path("play_backup.sql").read_text(encoding="utf-8"))
+        print("Restored play data")
+        db_init.init_data(conn)
+        conn.commit()
     print("Done")
+
 
 if __name__ == "__main__":
     main()

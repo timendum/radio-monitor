@@ -18,49 +18,48 @@ def insert_into_radio(
     """Insert a new play into the radio database"""
     performer = performer.strip()
     title = title.strip()
-    conn = conn_db()
-    if not timestamp:
-        timestamp = datetime.now()
-    # Avoid duplicates
-    lasts = (
-        conn.execute(
-            """
-SELECT observed_at, title_raw, performer_raw
-FROM play
-WHERE station_id = (SELECT station_id FROM station WHERE station_code = ?)
-ORDER BY ABS(strftime('%s', observed_at) - strftime('%s', ?))
-LIMIT 2
-""",
-            (radio, timestamp.isoformat()),
-        ).fetchall()
-        or ()
-    )
-    for _, t, p in lasts:
-        if t == title and p == performer:
-            # skip
-            return radio, p, t
+    with conn_db() as conn:
+        if not timestamp:
+            timestamp = datetime.now()
+        # Avoid duplicates
+        lasts = (
+            conn.execute(
+                """
+    SELECT observed_at, title_raw, performer_raw
+    FROM play
+    WHERE station_id = (SELECT station_id FROM station WHERE station_code = ?)
+    ORDER BY ABS(strftime('%s', observed_at) - strftime('%s', ?))
+    LIMIT 2
+    """,
+                (radio, timestamp.isoformat()),
+            ).fetchall()
+            or ()
+        )
+        for _, t, p in lasts:
+            if t == title and p == performer:
+                # skip
+                return radio, p, t
 
-    # Insert
-    conn.execute(
-        """INSERT INTO play (
-            station_id,
-            observed_at,
-            title_raw,
-            performer_raw,
-            acquisition_id,
-            source_payload
-        ) VALUES (
-            (SELECT station_id FROM station WHERE station_code = ?),
-            ?,
-            ?,
-            ?,
-            ?,
-            ?)""",
-        (radio, timestamp.isoformat(), title, performer, acquisition_id, payload),
-    )
-    conn.commit()
-    conn.close()
-    return radio, performer, title
+        # Insert
+        conn.execute(
+            """INSERT INTO play (
+                station_id,
+                observed_at,
+                title_raw,
+                performer_raw,
+                acquisition_id,
+                source_payload
+            ) VALUES (
+                (SELECT station_id FROM station WHERE station_code = ?),
+                ?,
+                ?,
+                ?,
+                ?,
+                ?)""",
+            (radio, timestamp.isoformat(), title, performer, acquisition_id, payload),
+        )
+        conn.commit()
+        return radio, performer, title
 
 
 def generate_batch(prefix="test", time: None | datetime = None) -> str:

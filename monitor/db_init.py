@@ -19,10 +19,9 @@ def init_data(conn: sqlite3.Connection) -> None:
 
 
 def main() -> None:
-    conn = utils.conn_db()
-    init_schema(conn)
-    init_data(conn)
-    conn.close()
+    with utils.conn_db() as conn:
+        init_schema(conn)
+        init_data(conn)
 
 
 if __name__ == "__main__":

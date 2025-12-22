@@ -10,7 +10,7 @@ from monitor.utils import calc_score
 class Song(NamedTuple):
     title: str
     s_performers: str
-    l_performers: tuple[str] | tuple[()]
+    l_performers: tuple[str, ...] | tuple[()]
     isrc: str | None
     year: int
     country: str
@@ -94,7 +94,9 @@ ORDER BY p.inserted_at ASC
 LIMIT 20""").fetchall()
 
 
-RES_TODO = Candidate((Song("TODO", "TODO", (), None, 0, "", 0), None), 0, "todo")
+CAND_TODO = Candidate((Song("TODO", "TODO", (), None, 0, "", 0), None), 0, "todo")
+
+CAND_IGNORED = Candidate((Song("TODO", "TODO", (), None, 1, "", 0), None), 1, "")
 
 
 def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection):
@@ -115,7 +117,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             )
             for cl in candidates.values()
             for c in cl
-            if c != RES_TODO and c.song[0] is not None
+            if c != CAND_TODO and c != CAND_IGNORED and c.song[0] is not None
         ),
     )
     # artist
@@ -128,7 +130,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             (p,)
             for cl in candidates.values()
             for c in cl
-            if c != RES_TODO and c.song[0] is not None
+            if c != CAND_TODO and c != CAND_IGNORED and c.song[0] is not None
             for p in c.song[0].l_performers
         ),
     )
@@ -143,7 +145,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             (c.song[0].title, c.song[0].s_performers, p)
             for cl in candidates.values()
             for c in cl
-            if c != RES_TODO and c.song[0] is not None
+            if c != CAND_TODO and c != CAND_IGNORED and c.song[0] is not None
             for p in c.song[0].l_performers
         ),
     )
@@ -167,7 +169,7 @@ def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, st
     resolution = None
     status = "pending"
     if not candidates_list:
-        return RES_TODO, "pending"
+        return CAND_TODO, "pending"
     if candidates_list != sorted(candidates_list, key=lambda c: c.score, reverse=True):
         raise ValueError("Candidates list not sorted")
     if not candidates_list:
@@ -193,7 +195,7 @@ def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, st
     if not resolution:
         resolution = candidates_list[0]
         status = "pending"
-    return resolution if resolution else RES_TODO, status
+    return resolution if resolution else CAND_TODO, status
 
 
 def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection):
@@ -217,7 +219,7 @@ def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
         if not song_id:
             raise ValueError("Song resolved but not found in DB")
         conn.execute(
-            """INSERT INTO play_resolution
+            """INSERT OR REPLACE INTO play_resolution
             (play_id, song_id, chosen_score, status) VALUES
             (?,       ?,       ?,            ?     )""",
             (play_id, song_id, resolution.score, status),
@@ -225,29 +227,29 @@ def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
 
 
 def main() -> None:
-    conn = utils.conn_db()
-    candidates: dict[int, list[Candidate]] = {}
-    todos = find_play_todo(conn)
-    for play_id, title, performer in todos:
-        # DB first
-        song_match = db_find(title, performer, conn)
-        if song_match:
-            candidates[play_id] = [Candidate((None, s[0]), s[1], "db") for s in song_match]
-        if play_id not in candidates:
-            releases = spotify_find(title, performer, get_token())
-            if releases:
-                candidates[play_id] = [
-                    Candidate((Song.from_spotify(ss), None), ss.score, "spotify") for ss in releases
-                ]
-            sleep(1)
-        if play_id not in candidates:
-            # Generate one fake candidate
-            candidates[play_id] = [RES_TODO]
-    save_candidates(candidates, conn)
-    conn.commit()
-    save_resolution(candidates, conn)
-    conn.commit()
-    conn.close()
+    with utils.conn_db() as conn:
+        candidates: dict[int, list[Candidate]] = {}
+        todos = find_play_todo(conn)
+        for play_id, title, performer in todos:
+            # DB first
+            song_match = db_find(title, performer, conn)
+            if song_match:
+                candidates[play_id] = [Candidate((None, s[0]), s[1], "db") for s in song_match]
+            if play_id not in candidates:
+                releases = spotify_find(title, performer, get_token())
+                if releases:
+                    candidates[play_id] = [
+                        Candidate((Song.from_spotify(ss), None), ss.score, "spotify")
+                        for ss in releases
+                    ]
+                sleep(1)
+            if play_id not in candidates:
+                # Generate one fake candidate
+                candidates[play_id] = [CAND_TODO]
+        save_candidates(candidates, conn)
+        conn.commit()
+        save_resolution(candidates, conn)
+        conn.commit()
 
 
 if __name__ == "__main__":

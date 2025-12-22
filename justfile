@@ -45,3 +45,6 @@ spotify:
 
 mb:
   @uv run --env-file .env python -m monitor.musicbrainz
+
+test:
+  uv run --env-file .env python -m unittest discover -s tests
