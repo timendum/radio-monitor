@@ -1,0 +1,73 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - www.capital.it
+      User-Agent:
+      - python-httpx/0.28.1
+    method: GET
+    uri: https://www.capital.it/api/pub/v2/all/gdwc-audio-player/onair?format=json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA7ySzU7EIBSFX6Xp2rTTDtbapcaVC80Yd03ILWCLw1+AtjGTeXehVh0nma0LEvjO
+        5Z4TLodUW95zBQJzmjYpAcM9iEYr4LYpUIHSq9RzL1gQ78GTgas+udOUM5e8PDw+vQYdRj9ouxQs
+        t5MdI9pSlzz7pAg6l9DH+4P3xjVt3ubzPGerVcZ9m4dtm5uxa3OiJ2Zdmzu21yMmqyPuFsfs3fQY
+        Yz9gtNnEFcESgHKNRyv+mCCCurq6IfVtiVBdFUDKokJlVddbWgDdZNJNVGWKhQAWQoc10flJgvPM
+        YgllJrdjfeqHB+H+yZPI6DSbry0G2glN9gG9gXAshjIGK5DxoZVWkUhGOWD/YSITfIps9mlz+Jno
+        94AtYxFPnDIdC4XQRZB3MVOyTjXUnepl0Jdfcsa3l//BaRmKMducnuHr36SnuLrU9Hg8fgIAAP//
+        AwB0obBTwwIAAA==
+    headers:
+      Accept-Ranges:
+      - bytes
+      Age:
+      - '18'
+      Cache-Control:
+      - max-age=61, s-maxage=61
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '352'
+      Content-Type:
+      - application/json;charset=utf-8
+      Date:
+      - Mon, 22 Dec 2025 14:27:19 GMT
+      Expires:
+      - Mon, 22 Dec 2025 14:28:19 GMT
+      Vary:
+      - Accept-Encoding,x-lambdaedge-localauth
+      Via:
+      - 1.1 google, 1.1 cf4a5b670929e909e269a5a8000da4b6.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - eJeS1kRAPcqXS4rqRRsvMLoGpa2l3io_6PLhCaST-2mEB6v52faRcA==
+      X-Amz-Cf-Pop:
+      - MXP53-P6
+      X-Cache:
+      - Hit from cloudfront
+      X-Cacheable:
+      - 'YES'
+      X-Robots-Tag:
+      - noarchive, max-image-preview:large
+      referrer-policy:
+      - unsafe-url
+      smaxagedone:
+      - yup
+      x-kw-cache-control:
+      - max-age=61, s-maxage=61
+      x-kw-date:
+      - Mon, 22 Dec 2025 14:27:18 GMT
+      x-kw-expires:
+      - Mon, 22 Dec 2025 14:28:19 GMT
+    status:
+      code: 200
+      message: OK
+version: 1

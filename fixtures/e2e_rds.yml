@@ -1,0 +1,77 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - cdnapi.rds.it
+      User-Agent:
+      - python-httpx/0.28.1
+    method: GET
+    uri: https://cdnapi.rds.it/v2/site/get_player_info
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAA/41UXW/aMBT9K5Z5JWA7zucb69ppmrROKi/bmJBJTLHqOMhxurUV/33XIYGWFgnB
+        Q+x77sc59/q+4MYJ1zY4p2NcyaYR9xLn+PYbHuOtlVdCa5w728oxbmpzvxzQL976qNpm6a/92Smn
+        vetNDQZpEfpZt2AZY2GdahxYZnq7EY9KA2yMixpAcLlxbtvki+li+leuJrZsJsotptViqnicEQC6
+        p60P26UZY1UuK9E4aYvaOFtDcZTSMMmoN+Hc+7wCLd+jtHqQUH9MebqDKlprpXFHEm+SDZSuRCWt
+        eE3lukR3GwmX5iIqEWVJCsjK19hFHzGakDRLR4ywKKAsYGxOeU4I/CeEkF8jtgrpmq9ZsErLOFgT
+        SuErZgEhEYliUURMyFEiyzIjKxkk60QEnIQyWDEeBYSmCSesjDJOP1StT79XrSvvQ9kOsF42moQE
+        ZDPyn3vX+NlKwfh0zT3oNBcGfuoikUJOQ3ZJw6OYAcd96Z3Txx0fYH3pKeXxbrcfYzj+fsFNx52R
+        hPbDrar99J+tUXdo38i2UcVS1+BTdt/lyosVR2nE+mCDLF8Nmm8k+izsA8K97aDPndTSCPSlruSz
+        101Z/8KsA+/KOx+nA9EoZ0lOQoCVrRVO1QYANIknWYQPLHFIhiS18eH6QJ033o171jwhJLuYNY9Z
+        zM+xphm8rJSesP6kIAC6XaMZupHCbaD3p9w/wSZQEl0rrZrNBeTDPEzekmcknnSCDOQ5P0s+PJKP
+        KGfp5S336PMt54SHpy2fVcLW7/j+UOa+VUahuXBOFQp9bwsthVUXcPdr4YQ7TSZdXQN32HBnyRO8
+        +3NcdvrJqqLb4cMXnsvG1aiUWgtUCPNcG4lMbVCpmm1tVkpLJDSqYEyN88zWsNtBybXQjYQ3Beug
+        SwariyeMhSSjlEU8Tfc6t7aQs62CPMoFoG0g4LD7DwKUmDB7BgAA
+    headers:
+      Access-Control-Allow-Headers:
+      - Keep-Alive,X-Requested-With,Accept,Content-Type,Authorization
+      Access-Control-Allow-Methods:
+      - OPTIONS,GET,DELETE,POST,PUT
+      Age:
+      - '4'
+      Cache-Control:
+      - max-age=20
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json;charset=utf-8
+      Date:
+      - Mon, 22 Dec 2025 14:38:45 GMT
+      Expires:
+      - Thu, 19 Nov 1981 08:52:00 GMT
+      Pragma:
+      - cache
+      Server:
+      - Apache
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - accept-encoding
+      Via:
+      - 1.1 bbdab68f6dd980a27e635ee335ffbfb0.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - EJ4_ls0IVAb6hIBjmWg3yOuDg9S10MWP0Xl7Sgk-7rObVyL-3KXQDg==
+      X-Amz-Cf-Pop:
+      - MXP53-P4
+      X-Cache:
+      - Hit from cloudfront
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

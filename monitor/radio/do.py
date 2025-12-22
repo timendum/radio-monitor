@@ -1,9 +1,9 @@
 from monitor import utils
-from monitor.radio import capital, deejay, m2o, r101, r105, rds, rtl, virgin
+from monitor.radio import capital, deejay, freccia, m2o, r101, r105, rds, rtl, virgin
 
 
 def main() -> None:
-    modules = [capital, deejay, m2o, r101, r105, rds, rtl, virgin]
+    modules = [capital, deejay, freccia, m2o, r101, r105, rds, rtl, virgin]
     acquisition_id = utils.generate_batch("do")
     for modu in modules:
         try:

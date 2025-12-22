@@ -1,0 +1,82 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - www.deejay.it
+      User-Agent:
+      - python-httpx/0.28.1
+    method: GET
+    uri: https://www.deejay.it/api/broadcast_airplay/?get=now
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//dFDRTsIwFP2Vpb4K27p2G3tDIMqDxqCGmCxZuvUOhmVd2k4khH+3RQka
+        40OTnnvOPfeee0C6ryrQGmVG9XCNTLMFlCEcYDoI8QBjLyQZTbOIoGukQPfCoOyAtGxXd0yvrTSE
+        OoQgoDEjZZQwWlWUxBWlcRgnaQRg+zolV4pt59zJo0vhgZ2GTRomvRsQorlQ95I7KrQVzgw8Crb/
+        u1aYUedW9epR2gRtL4Q1APb2AzJlGm13RreL2ezBm45fkUtphLNfrqH15t5EbsEbK9m33JKClSAs
+        ef6+KIeu3CD5DuoLro3pdJb7ub/b7YYcYMP2w8bkPuua3O/6MvdPal1oqQzw3MdBmOY+wVHu10lU
+        EkrSuAZaJ2VS12REcVxTPEpHwKPhplsVRWHWBQkC91zB3Z/xRk7tOc7hWtjpZ/gwZ1wqyXjFtAH1
+        fduFa/Gmp/3QL8ESyqfGWf2fBR2PnwAAAP//AwAJuK8DIQIAAA==
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Headers:
+      - origin, x-requested-with, content-type
+      Access-Control-Allow-Methods:
+      - GET
+      Access-Control-Allow-Origin:
+      - '*'
+      - '*'
+      Age:
+      - '3'
+      Cache-Control:
+      - max-age=30, s-maxage=30
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '379'
+      Content-Type:
+      - text/plain
+      Date:
+      - Mon, 22 Dec 2025 13:59:05 GMT
+      Vary:
+      - Accept-Encoding
+      Via:
+      - 1.1 google, 1.1 5b27aef6976c473627653d1ce7269000.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - KpwOYJ3kH_A0xuqTRnviiI-GnoA_T9FNoquvz7jdDUI1cxCdz0OClg==
+      X-Amz-Cf-Pop:
+      - MXP53-P8
+      X-Cache:
+      - Hit from cloudfront
+      X-Cacheable:
+      - 'YES'
+      X-Robots-Tag:
+      - noarchive, max-image-preview:large
+      X-rewritten:
+      - yup
+      cached:
+      - 'true'
+      referrer-policy:
+      - unsafe-url
+      smaxagedone:
+      - yup
+      x-kw-cache-control:
+      - max-age=30, s-maxage=30
+      x-kw-date:
+      - Mon, 22 Dec 2025 13:59:05 GMT
+      x-kw-expires:
+      - ''
+    status:
+      code: 200
+      message: OK
+version: 1

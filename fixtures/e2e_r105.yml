@@ -1,0 +1,65 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - www.105.net
+      User-Agent:
+      - python-httpx/0.28.1
+    method: GET
+    uri: https://www.105.net/custom_widget/finelco/getStreamInfo.jsp?host=https%3A%2F%2Ficy.unitedradio.it%2FRadio105.aac
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAA/3VQTUvDQBC9F/oflhxEwWSSbba7KYiEtgdR09LiWXY323YlaUJ3UqzS/+7Ginhx
+        YOA93ny8meGA/MTwF30Grtlvg0lQLMg0X5LrlSxtQ+alxZvgNtDN0Ry8ukNs3QTAuiR0rorqD4cS
+        rY50U4Ot5dYA7rpawXPnrKY0gWMKQgDfAOce8A3nmQn1SLJQlWITJkyKsDQjnTE1ThUTkGSCxylL
+        eMbo67TfG721WxjH8btPpXrmHVns9sb9sVT3GyPZtpW5uEGQB7QOobROV43rDgYYjUUqKBX3XXOX
+        +jGXEj9m9rCePi3WL6s5uSJ5MZuv1ouCRMs8f/RlJyP782lMWd9Uqa721EO0WJl/34anthe/X3se
+        DAdfLN3LC3oBAAA=
+    headers:
+      AType:
+      - A-NEW-MEDIASET1-SSL
+      Cache-Control:
+      - public,s-maxage=30,max-age=30,stale-if-error
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json;charset=UTF-8
+      Date:
+      - Mon, 22 Dec 2025 14:36:55 GMT
+      Server:
+      - nginx/1.18.0 (Ubuntu)
+      Set-Cookie:
+      - AWSALB=9RQY6XjhXYsc7Dp5sg30kMYvgOdkLj9Ej1hDSh9gZdq1DUHLjewGiqPYV2VUIs+71qVooRE1j/atXo7JUZw1vtD86JcZ+kmMCRVu0G9GaxImCqtzi/ik+Mu1oOGu;
+        Expires=Mon, 29 Dec 2025 14:36:55 GMT; Path=/
+      - AWSALBCORS=9RQY6XjhXYsc7Dp5sg30kMYvgOdkLj9Ej1hDSh9gZdq1DUHLjewGiqPYV2VUIs+71qVooRE1j/atXo7JUZw1vtD86JcZ+kmMCRVu0G9GaxImCqtzi/ik+Mu1oOGu;
+        Expires=Mon, 29 Dec 2025 14:36:55 GMT; Path=/; SameSite=None; Secure
+      - nlbi_3133911=8q1iSFhHa0iOx9ZzRNKQ8wAAAAD+EcWcPfcg03hP8rhM3Jvl; HttpOnly; path=/;
+        Domain=.105.net
+      - visid_incap_3133911=gcrEHV+nRb+u9yF36mTrU4dXSWkAAAAAQUIPAAAAAABpjl/3pNIGNghKyTJEHxM0;
+        expires=Mon, 21 Dec 2026 22:45:11 GMT; HttpOnly; path=/; Domain=.105.net
+      - incap_ses_63_3133911=jLkXfXGcGkmwOdEmddLfAIdXSWkAAAAA1nbHUci3spvi/uyd0D3eUQ==;
+        path=/; Domain=.105.net
+      Transfer-Encoding:
+      - chunked
+      Type:
+      - NEW-MEDIASET1-https
+      X-CDN:
+      - Imperva
+      X-Iinfo:
+      - 53-61759489-61757083 3NYN RT(1766414215722 50) q(0 0 0 3) r(1 1) U20
+      server-node:
+      - '1'
+    status:
+      code: 200
+      message: ''
+version: 1

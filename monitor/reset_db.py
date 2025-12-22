@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-from monitor import db_init
+from monitor import db_init, utils
 
 
 def backup_tables(tables: list[str], out_sql_path: str, conn: sqlite3.Connection) -> None:
@@ -33,12 +33,12 @@ def backup_tables(tables: list[str], out_sql_path: str, conn: sqlite3.Connection
 
 
 def main() -> None:
-    conn = sqlite3.Connection("radio.sqlite3")
+    conn = utils.conn_db()
     backup_tables(["country", "station", "play"], "play_backup.sql", conn)
     backup_tables(["artist", "song", "song_artist"], "songs_backup.sql", conn)
     conn.close()
     Path("radio.sqlite3").unlink()
-    conn = sqlite3.Connection("radio.sqlite3")
+    conn = utils.conn_db()
     db_init.init_schema(conn)
     conn.executescript(Path("play_backup.sql").read_text(encoding="utf-8"))
     print("Restored play data")

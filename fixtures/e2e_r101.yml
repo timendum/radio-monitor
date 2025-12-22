@@ -1,0 +1,63 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - www.r101.it
+      User-Agent:
+      - python-httpx/0.28.1
+    method: GET
+    uri: https://www.r101.it/custom_widget/finelco/getStreamInfo.jsp?host=http%3A%2F%2Ficecast.unitedradio.it%2Fr101
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAA/01Q0WrDMAx8D+QfSp6XKHZiNy6M0cfBlo31CxTPST3iJMRKWTf273PWsVUguJPE
+        6aQ42vxG/Ic+Ez8OXbJLDvX+OblJ9Hgyc6BHosnvAKxnqfd95j48IVmd6dGBddgZoOPiGnhcvNWc
+        MziVsH0F5KBEAMiVKDDVWOlUyrJNOfJt2hTI2rbUBas0MCVFpUollVDZ29SBzPP3kE2zsuDF0jIY
+        f2XGrbsynKbeXHwQ4EzWE8yjx7S3wwBMVLkUXMr8bhlvyyBzGQkyL0+H/ebhvq5D8WxwPTNf+32z
+        uIADJEu9+X8GnaeV/XzoK4qjb0SrO0hBAQAA
+    headers:
+      AType:
+      - A-NEW-MEDIASET2-SSL
+      Alt-Svc:
+      - h3=":443"; ma=86400
+      Cache-Control:
+      - public,s-maxage=30,max-age=30,stale-if-error
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json;charset=UTF-8
+      Date:
+      - Mon, 22 Dec 2025 14:35:33 GMT
+      Server:
+      - nginx/1.18.0 (Ubuntu)
+      Transfer-Encoding:
+      - chunked
+      Type:
+      - NEW-MEDIASET2-https
+      Via:
+      - 1.1 973a7bbddb117b58bca3bb1a1c6dc7c6.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - r08CRLPcJSvGRFl1ToXcAhHuIHTw7vQLf2Jkt69XpfFpT6RBF_K4iw==
+      X-Amz-Cf-Pop:
+      - MXP53-P7
+      X-CDN:
+      - Imperva
+      X-Cache:
+      - Miss from cloudfront
+      X-Iinfo:
+      - 5-17303485-17303182 3NYN RT(1766414133169 2) q(0 0 0 0) r(2 2)
+      server-node:
+      - '2'
+    status:
+      code: 200
+      message: OK
+version: 1

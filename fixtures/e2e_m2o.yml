@@ -1,0 +1,71 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Host:
+      - www.m2o.it
+      User-Agent:
+      - python-httpx/0.28.1
+    method: GET
+    uri: https://www.m2o.it/api/pub/v2/all/gdwc-audio-player/onair?format=json
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA7SSUWuDMBSF/4r4PLTazDnf9lIoDApdYQyEcGtizZbkhhiVUvrfl7RjdX3fQ+Dy
+        nZt7Drk5xWjFQWiQVLC4ilWOFWoQtipJHj/ETjjJPd91PFqB4xG20cZ0XAqIdi8fr5tt9Pa+Xu18
+        KwyuQ+t71xKsQE+EgkO43Dln+qpO63SapsRbJMLVKRhRp2bY12mDI7d9nTo4SrS0n0TrqOs4bb0j
+        xZbi1TH5NAdKvULJYhFOABdnJpAOVv7xIg3Zl8VTUz7nhJRFBk2eFSQvynLJMmCLRPUj04nmPosF
+        P8EHm1cKesctVZCo5VDObWgn+/+1alQwmMy1pMD2Epsvj1qQPQ9ZjKEaVHhdjToQxZkA6o4mMCnG
+        wCYXV6ffHf5s1HIe6CgYx9AnJWZe3YY0kY/je+Za7rXLj7jjy/mm5wIJmeqU3eHHW6w5Lm5jzufz
+        NwAAAP//AwAblt2gjwIAAA==
+    headers:
+      Accept-Ranges:
+      - bytes
+      Age:
+      - '53'
+      Cache-Control:
+      - max-age=61, s-maxage=61
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '358'
+      Content-Type:
+      - application/json;charset=utf-8
+      Date:
+      - Mon, 22 Dec 2025 14:34:12 GMT
+      Expires:
+      - Mon, 22 Dec 2025 14:34:20 GMT
+      Vary:
+      - Accept-Encoding,x-lambdaedge-localauth
+      Via:
+      - 1.1 google, 1.1 93034e1747bf3756ba1c0f1c60038690.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - zUQIOhm48gSx_pT41rikp-lot0mQNkBo-_0iTfV6nPrOaBI1U30Bpw==
+      X-Amz-Cf-Pop:
+      - MXP63-P2
+      X-Cache:
+      - Hit from cloudfront
+      X-Cacheable:
+      - 'YES'
+      X-Robots-Tag:
+      - noarchive, max-image-preview:large
+      smaxagedone:
+      - yup
+      x-kw-cache-control:
+      - max-age=61, s-maxage=61
+      x-kw-date:
+      - Mon, 22 Dec 2025 14:33:19 GMT
+      x-kw-expires:
+      - Mon, 22 Dec 2025 14:34:20 GMT
+    status:
+      code: 200
+      message: OK
+version: 1

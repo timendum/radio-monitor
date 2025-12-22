@@ -4,6 +4,9 @@ from difflib import SequenceMatcher
 from typing import Any
 
 
+def conn_db() -> sqlite3.Connection:
+    return sqlite3.Connection("radio.sqlite3")
+
 def insert_into_radio(
     radio: str,
     performer: str,
@@ -12,9 +15,10 @@ def insert_into_radio(
     timestamp: None | datetime = None,
     payload="",
 ) -> None | tuple[str, str, str]:
+    """Insert a new play into the radio database"""
     performer = performer.strip()
     title = title.strip()
-    conn = sqlite3.Connection("radio.sqlite3")
+    conn = conn_db()
     if not timestamp:
         timestamp = datetime.now()
     # Avoid duplicates
@@ -27,7 +31,7 @@ WHERE station_id = (SELECT station_id FROM station WHERE station_code = ?)
 ORDER BY ABS(strftime('%s', observed_at) - strftime('%s', ?))
 LIMIT 2
 """,
-            (radio, timestamp),
+            (radio, timestamp.isoformat()),
         ).fetchall()
         or ()
     )
@@ -83,10 +87,10 @@ def clear_title(title: str) -> str:
 
 def calc_score(otitle: str, operformer: str, title: str, performer: str) -> float:
     otitle, operformer, title, performer = (
-        otitle.lower(),
-        operformer.lower(),
-        title.lower(),
-        performer.lower(),
+        otitle.lower().strip(),
+        operformer.lower().strip(),
+        title.lower().strip(),
+        performer.lower().strip(),
     )
     """Return a measure of similarity,
     1 if the title and performer are identical, and 0 if

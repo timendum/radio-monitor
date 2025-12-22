@@ -2,6 +2,7 @@ import sqlite3
 from time import sleep
 from typing import Any, NamedTuple
 
+from monitor import utils
 from monitor.spotify import SpSong, get_token, spotify_find
 from monitor.utils import calc_score
 
@@ -9,7 +10,7 @@ from monitor.utils import calc_score
 class Song(NamedTuple):
     title: str
     s_performers: str
-    l_performers: tuple[str]
+    l_performers: tuple[str] | tuple[()]
     isrc: str | None
     year: int
     country: str
@@ -23,14 +24,6 @@ class Song(NamedTuple):
 class Candidate(NamedTuple):
     song: tuple[Song, None] | tuple[None, int]
     """ Song or song_id"""
-    play_id: int
-    score: float
-    method: str
-
-
-class Resolution(NamedTuple):
-    song: Song
-    play_id: int
     score: float
     method: str
 
@@ -101,7 +94,7 @@ ORDER BY p.inserted_at ASC
 LIMIT 20""").fetchall()
 
 
-def save_candidates(candidates: list[Candidate], conn: sqlite3.Connection):
+def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection):
     # SONG
     conn.executemany(
         """
@@ -117,7 +110,8 @@ def save_candidates(candidates: list[Candidate], conn: sqlite3.Connection):
                 c.song[0].country,
                 c.song[0].duration,
             )
-            for c in candidates
+            for cl in candidates.values()
+            for c in cl
             if c.song[0] is not None
         ),
     )
@@ -127,7 +121,13 @@ def save_candidates(candidates: list[Candidate], conn: sqlite3.Connection):
     INSERT OR IGNORE INTO artist
         (artist_name) VALUES
         (?)""",
-        ((p,) for c in candidates if c.song[0] is not None for p in c.song[0].l_performers),
+        (
+            (p,)
+            for cl in candidates.values()
+            for c in cl
+            if c.song[0] is not None
+            for p in c.song[0].l_performers
+        ),
     )
     # song_artist
     conn.executemany(
@@ -138,7 +138,8 @@ def save_candidates(candidates: list[Candidate], conn: sqlite3.Connection):
                   (SELECT artist_id FROM artist WHERE artist_name = ?))""",
         (
             (c.song[0].title, c.song[0].s_performers, p)
-            for c in candidates
+            for cl in candidates.values()
+            for c in cl
             if c.song[0] is not None
             for p in c.song[0].l_performers
         ),
@@ -146,13 +147,14 @@ def save_candidates(candidates: list[Candidate], conn: sqlite3.Connection):
     # match_candidate
     conn.executemany(
         """
-    INSERT OR IGNORE INTO match_candidate
+    INSERT INTO match_candidate
         (play_id, song_id, candidate_score, method) VALUES
         (?,       (SELECT s.song_id from song s where song_title = ? AND song_performers = ?),
                            ?,               ?     )""",
         (
-            (c.play_id, c.song[0].title, c.song[0].s_performers, c.score, c.method)
-            for c in candidates
+            (play_id, c.song[0].title, c.song[0].s_performers, c.score, c.method)
+            for play_id, cl in candidates.items()
+            for c in cl
             if c.song[0] is not None
         ),
     )
@@ -161,43 +163,51 @@ def save_candidates(candidates: list[Candidate], conn: sqlite3.Connection):
 def save_skipped(items: list[tuple[int, str, str]], conn: sqlite3.Connection):
     conn.executemany(
         """
-    INSERT OR IGNORE INTO match_candidate
-    (play_id, song_id, candidate_score, method) VALUES
+    INSERT INTO play_resolution
+    (play_id, song_id, chosen_score, status) VALUES
     (?,       (SELECT s.song_id from song s where song_title = 'TODO' AND song_performers = 'TODO'),
                        ?,               ?     )""",
-        ((i[0], 0, "none") for i in items),
+        ((i[0], 0, "pending") for i in items),
     )
+
+
+RES_TODO = Candidate((Song("TODO", "TODO", (), None, 0, "", 0), None), 0, "todo")
+
+
+def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, str]:
+    resolution = None
+    status = "pending"
+    if candidates_list != sorted(candidates_list, key=lambda c: c.score, reverse=True):
+        raise ValueError("Candidates list not sorted")
+    if candidates_list[0].score < 0.5:
+        # Low confidence, no auto-resolution
+        return RES_TODO, "pending"
+    # Assert: 0.5 < Best core
+    if candidates_list[0].score >= 0.9:
+        # High confidence, resolved
+        resolution = candidates_list[0]
+        status = "auto"
+    # Assert: 0.5 < Best core < 0.9
+    if not resolution and len(candidates_list) < 2:
+        # Good confidence, no other options, resolved
+        resolution = candidates_list[0]
+        status = "auto"
+    # Assert:0.5 < Best core < 0.9 ; more than 1 candidate
+    if not resolution and (candidates_list[0].score - candidates_list[1].score) > 0.2:
+        # Good confidence, clear margin over next option, resolved
+        resolution = candidates_list[0]
+        status = "auto"
+    if not resolution:
+        resolution = candidates_list[0]
+        status = "pending"
+    return resolution if resolution else RES_TODO, status
 
 
 def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection):
     for play_id, candidates_list in candidates.items():
         if not candidates_list:
             continue
-        resolution = None
-        status = "todo"
-        if candidates_list != sorted(candidates_list, key=lambda c: c.score, reverse=True):
-            raise ValueError("Candidates list not sorted")
-        if candidates_list[0].score < 0.5:
-            # Low confidence, no auto-resolution
-            continue
-        # Assert: 0.5 < Best core
-        if candidates_list[0].score >= 0.9:
-            # High confidence, resolved
-            resolution = candidates_list[0]
-            status = "auto"
-        # Assert: 0.5 < Best core < 0.9
-        if not resolution and len(candidates_list) < 2:
-            # Good confidence, no other options, resolved
-            resolution = candidates_list[0]
-            status = "auto"
-        # Assert:0.5 < Best core < 0.9 ; more than 1 candidate
-        if not resolution and (candidates_list[0].score - candidates_list[1].score) > 0.2:
-            # Good confidence, clear margin over next option, resolved
-            resolution = candidates_list[0]
-            status = "auto"
-        if not resolution:
-            resolution = candidates_list[0]
-            status = "pending"
+        resolution, status = find_best_candidate(candidates_list)
         # Save to DB
         song_id = None
         if resolution.song[1] is not None:
@@ -216,22 +226,15 @@ def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
         if not song_id:
             raise ValueError("Song resolved but not found in DB")
         conn.execute(
-            """INSERT OR IGNORE INTO play_resolution
+            """INSERT INTO play_resolution
             (play_id, song_id, chosen_score, status) VALUES
             (?,       ?,       ?,            ?     )""",
             (play_id, song_id, resolution.score, status),
         )
-        if status == "auto":
-            conn.execute(
-                """INSERT OR IGNORE INTO play_resolution
-            (play_id, song_id, chosen_score, status) VALUES
-            (?,       ?,       ?,            ?     )""",
-                (play_id, song_id, resolution.score, status),
-            )
 
 
 def main() -> None:
-    conn = sqlite3.Connection("radio.sqlite3")
+    conn = utils.conn_db()
     candidates: dict[int, list[Candidate]] = {}
     to_skip: list[tuple[int, str, str]] = []
     todos = find_play_todo(conn)
@@ -239,23 +242,21 @@ def main() -> None:
         # DB first
         song_match = db_find(title, performer, conn)
         if song_match:
-            candidates[play_id] = [Candidate((None, s[0]), play_id, s[1], "db") for s in song_match]
+            candidates[play_id] = [Candidate((None, s[0]), s[1], "db") for s in song_match]
         if play_id not in candidates:
             releases = spotify_find(title, performer, get_token())
             if releases:
                 candidates[play_id] = [
-                    Candidate((Song.from_spotify(ss), None), play_id, ss.score, "spotify")
-                    for ss in releases
+                    Candidate((Song.from_spotify(ss), None), ss.score, "spotify") for ss in releases
                 ]
         if play_id not in candidates:
             to_skip.append((play_id, performer, title))
         sleep(1)
         if not song_match:
             continue
-    save_candidates([c for cs in candidates.values() for c in cs], conn)
+    save_candidates(candidates, conn)
     conn.commit()
     save_resolution(candidates, conn)
-    save_skipped(to_skip, conn)
     conn.commit()
     conn.close()
 

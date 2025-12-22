@@ -1,6 +1,8 @@
 import sqlite3
 from pathlib import Path
 
+from monitor import utils
+
 
 def init_schema(conn: sqlite3.Connection) -> None:
     base = Path(__file__).parent / Path("sql")
@@ -17,7 +19,7 @@ def init_data(conn: sqlite3.Connection) -> None:
 
 
 def main() -> None:
-    conn = sqlite3.Connection("radio.sqlite3")
+    conn = utils.conn_db()
     init_schema(conn)
     init_data(conn)
     conn.close()
