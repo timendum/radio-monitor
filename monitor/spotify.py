@@ -1,7 +1,7 @@
 import base64
 import os
+from dataclasses import dataclass
 from functools import cache
-from typing import NamedTuple
 
 import httpx
 
@@ -9,8 +9,8 @@ from monitor.utils import calc_score, clear_artist, clear_title, print_ascii_tab
 
 SPOTIFY_AUTH = os.environ["SPOTIFY_AUTH"]
 
-
-class SpSong(NamedTuple):
+@dataclass
+class SpSong:
     title: str
     s_performers: str
     l_performers: tuple[str]
@@ -62,15 +62,14 @@ def find_releases(title: str, artist: str, token: str) -> list[SpSong]:
         # for suff in ("(with ", "(feat"):
         #     if suff in title and title.find(suff) > 2:
         #         title = title[: title.find(suff)].strip()
+        s_performers = ", ".join(a["name"] for a in item["artists"])
         r = SpSong(
             year=int(item["album"]["release_date"][:4]),
             country=country,
             title=title,
-            s_performers=", ".join(a["name"] for a in item["artists"]),
+            s_performers=s_performers,
             l_performers=tuple(a["name"] for a in item["artists"]),
-            score=max(
-                [calc_score(title, artist, item["name"], a["name"]) for a in item["artists"]]
-            ),
+            score=calc_score(title, artist, item["name"], s_performers),
             isrc=item["external_ids"]["isrc"],
             duration=int(item["duration_ms"] / 1000),
         )
@@ -107,8 +106,7 @@ def main():
             print(" -> Not found")
             continue
         print(" -> Found")
-        r = rr[0]
-        print_ascii_table([[r.title, r.s_performers, r.year, r.country]])
+        print_ascii_table([[r.title, r.s_performers, r.year, r.country, r.score] for r in rr])
 
 
 if __name__ == "__main__":
