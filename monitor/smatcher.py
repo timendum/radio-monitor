@@ -162,9 +162,10 @@ def save_skipped(items: list[tuple[int, str, str]], conn: sqlite3.Connection):
     conn.executemany(
         """
     INSERT OR IGNORE INTO match_candidate
-        (play_id, song_id, candidate_score, method) VALUES
-        (?,       ?,       ?,               ?     )""",
-        ((i[0], 1, 0, "none") for i in items),
+    (play_id, song_id, candidate_score, method) VALUES
+    (?,       (SELECT s.song_id from song s where song_title = 'TODO' AND song_performers = 'TODO'),
+                       ?,               ?     )""",
+        ((i[0], 0, "none") for i in items),
     )
 
 
