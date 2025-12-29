@@ -1,4 +1,5 @@
 import sqlite3
+import unicodedata
 from time import sleep
 from typing import Any, NamedTuple
 
@@ -19,6 +20,12 @@ class Song(NamedTuple):
     @classmethod
     def from_spotify(cls, s: SpSong) -> "Song":
         return cls(s.title, s.s_performers, s.l_performers, s.isrc, s.year, s.country, s.duration)
+
+    @staticmethod
+    def unique_key(title: str, performers: str) -> str:
+        atitle = unicodedata.normalize("NFKD", title).encode("ascii", "ignore")
+        aperformers = unicodedata.normalize("NFKD", performers).encode("ascii", "ignore")
+        return (atitle + b"|" + aperformers).decode("ascii").lower()
 
 
 class Candidate(NamedTuple):
@@ -104,12 +111,13 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
     conn.executemany(
         """
     INSERT OR IGNORE INTO song
-        (song_title, song_performers, isrc, year, country, duration) VALUES
-        (?,          ?,               ?,    ?,    ?,       ?     )""",
+        (song_title, song_performers, song_key, isrc, year, country, duration) VALUES
+        (?,          ?,               ?,        ?,    ?,    ?,       ?     )""",
         (
             (
                 c.song[0].title,
                 c.song[0].s_performers,
+                Song.unique_key(c.song[0].title, c.song[0].s_performers),
                 c.song[0].isrc,
                 c.song[0].year,
                 c.song[0].country,

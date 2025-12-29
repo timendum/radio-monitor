@@ -9,6 +9,7 @@ from monitor.utils import calc_score, clear_artist, clear_title, print_ascii_tab
 
 SPOTIFY_AUTH = os.environ["SPOTIFY_AUTH"]
 
+
 @dataclass
 class SpSong:
     title: str
@@ -35,12 +36,12 @@ def get_token() -> str:
     return jr["access_token"]
 
 
-def find_releases(title: str, artist: str, token: str) -> list[SpSong]:
+def find_releases(title: str, performer: str, token: str) -> list[SpSong]:
     # fetch spotify API
     r = httpx.get(
         "https://api.spotify.com/v1/search",
         params={
-            "q": f"{clear_title(title)} artist:{clear_artist(artist)}",
+            "q": f"{clear_title(title)} artist:{clear_artist(performer)}",
             "type": "track",
         },
         headers={"Authorization": f"Bearer {token}"},
@@ -58,7 +59,6 @@ def find_releases(title: str, artist: str, token: str) -> list[SpSong]:
             country = item["external_ids"]["isrc"][:2]
         except BaseException:
             pass
-        title = item["name"]
         # for suff in ("(with ", "(feat"):
         #     if suff in title and title.find(suff) > 2:
         #         title = title[: title.find(suff)].strip()
@@ -66,10 +66,10 @@ def find_releases(title: str, artist: str, token: str) -> list[SpSong]:
         r = SpSong(
             year=int(item["album"]["release_date"][:4]),
             country=country,
-            title=title,
+            title=item["name"],
             s_performers=s_performers,
             l_performers=tuple(a["name"] for a in item["artists"]),
-            score=calc_score(title, artist, item["name"], s_performers),
+            score=calc_score(title, performer, item["name"], s_performers),
             isrc=item["external_ids"]["isrc"],
             duration=int(item["duration_ms"] / 1000),
         )

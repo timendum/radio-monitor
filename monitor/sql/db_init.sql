@@ -46,6 +46,7 @@ CREATE TABLE song (
   song_id          INTEGER PRIMARY KEY,
   song_title       TEXT NOT NULL,            -- canonical title
   song_performers  TEXT NOT NULL,            -- canonical performers
+  song_key         TEXT NOT NULL UNIQUE,     -- unique key (normalized title+performers)
   -- Optional industry identifiers & enrichment
   isrc             TEXT,                     -- if/when available
   year             INTEGER,                  -- enrichment (year of release/origin)

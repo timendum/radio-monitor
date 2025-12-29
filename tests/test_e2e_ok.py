@@ -26,6 +26,7 @@ def sanity_check(self: unittest.TestCase, conn: sqlite3.Connection):
     rows = conn.execute("SELECT song_id FROM play_resolution").fetchall()
     self.assertFalse(rows)
 
+
 class E2ETestCaseDJ(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -56,15 +57,14 @@ class E2ETestCaseDJ(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "deejay")
             self.assertEqual(row[1], "When I Come Around")
             self.assertEqual(row[2], "GREEN DAY")
             self.assertEqual(row[3], acquisition_id)
-
-
 
     def test_1b_match(self):
         """Perform a match against Spotify and verify db"""
@@ -89,13 +89,17 @@ class E2ETestCaseDJ(unittest.TestCase):
                 # TEST: Every artist is similar enough
                 self.assertGreaterEqual(utils.calc_score("title", row[1], "title", pperformer), 0.8)
             # song 1
-            rows = conn.execute("SELECT song_id, song_title FROM song").fetchall()
+            rows = conn.execute("SELECT song_id, song_title, song_key FROM song").fetchall()
             song_ids = []
             for row in rows:
                 if row[1] != "TODO":
                     song_ids.append(row[0])
+                # TEST: Every song has a key
+                self.assertGreaterEqual(len(row[2]), 1)
                 # TEST: Every song title is similar enough
-                self.assertGreaterEqual(utils.calc_score(row[1], "performer", ptitle, "performer"), 0.5)
+                self.assertGreaterEqual(
+                    utils.calc_score(row[1], "performer", ptitle, "performer"), 0.5
+                )
             # TEST: Every artist row has at least one song_artist row
             for artist_id in artist_ids:
                 rows = conn.execute(
