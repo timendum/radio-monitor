@@ -7,7 +7,7 @@ def main(acquisition_id: str) -> None | tuple[str, str, str]:
         "https://cloud.rtl.it/api-play.rtl.it/media/1.0/live/17/radiofreccia-radiovisione/-1/0/"
     )
     if r:
-        return utils.insert_into_radio("freccia", r[0], r[1], acquisition_id)
+        return utils.insert_into_radio("fre", r[0], r[1], acquisition_id)
     return None
 
 
