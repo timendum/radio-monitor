@@ -6,6 +6,9 @@ default:
 run:
   @uv run --env-file .env python -m monitor.do
 
+sql:
+  @sqlite3 radio.sqlite3
+
 resetdb:
   uv run --env-file .env python -m monitor.reset_db
 
