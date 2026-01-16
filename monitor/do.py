@@ -1,9 +1,9 @@
 from monitor import smatcher
-from monitor.radio import do
+from monitor.radio import do as radio
 
 
 def main() -> None:
-    do.main()
+    radio.main()
 
     try:
         smatcher.main()

@@ -1,7 +1,6 @@
 import sqlite3
 
-from monitor import smatcher
-from monitor import utils
+from monitor import smatcher, utils
 from monitor.smatcher import Candidate, Song, db_find
 from monitor.utils import print_ascii_table
 
@@ -185,13 +184,19 @@ def main() -> None:
             ncount = count_todo(last_id, conn)
             print(f"ID: {play_id} (todo: {ncount})")
             mc_song_ids = print_match_candidates(play_id, title, performer, conn)
-            decision = input(
-                "Action (Quit, Best, id to save, Retry, Spotify, iGnore, Insert Manualy, skip): "
-            ).strip().lower()
+            decision = (
+                input(
+                    "Action (Quit, Best, id to save, Retry, Spotify, iGnore, Insert Manualy, skip): "
+                )
+                .strip()
+                .lower()
+            )
             try:
                 song_id = int(decision)
                 if song_id in mc_song_ids:
-                    smatcher.save_resolution({play_id: [Candidate((None, song_id), 1, "human")]}, conn)
+                    smatcher.save_resolution(
+                        {play_id: [Candidate((None, song_id), 1, "human")]}, conn
+                    )
                     conn.commit()
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
