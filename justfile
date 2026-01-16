@@ -64,6 +64,11 @@ UNION
 SELECT '1_todo_plays',
   (SELECT count FROM cdata WHERE metric = '0_total_plays') - 
   (SELECT count FROM cdata WHERE metric = '2_with_candidates')
+UNION
+SELECT '9_no_resolution',
+  (SELECT count FROM cdata WHERE metric = '2_with_candidates') - 
+  (SELECT count FROM cdata WHERE metric = '3_to_check') - 
+  (SELECT count FROM cdata WHERE metric = '4_resolved')
 ORDER BY metric
 "
 
