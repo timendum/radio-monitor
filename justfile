@@ -43,6 +43,33 @@ ORDER BY observed_at DESC
 last:
   @sqlite3 radio.sqlite3 -readonly -table "{{sql_last}}"
 
+sql_count := "
+WITH cdata AS (
+  SELECT '0_total_plays' AS metric, COUNT(*) AS count FROM play
+  UNION ALL
+  SELECT '2_with_candidates', COUNT(DISTINCT p.play_id)
+  FROM play p
+  INNER JOIN match_candidate mc ON p.play_id = mc.play_id
+  UNION ALL
+  SELECT '3_to_check', COUNT(*)
+  FROM play_resolution
+  WHERE status = 'pending'
+  UNION ALL
+  SELECT '4_resolved', COUNT(*)
+  FROM play_resolution
+  WHERE status IN ('auto', 'human')
+)
+SELECT * from cdata
+UNION
+SELECT '1_todo_plays',
+  (SELECT count FROM cdata WHERE metric = '0_total_plays') - 
+  (SELECT count FROM cdata WHERE metric = '2_with_candidates')
+ORDER BY metric
+"
+
+count:
+  @sqlite3 radio.sqlite3 -readonly -table "{{sql_count}}"
+
 spotify:
   @uv run --env-file .env python -m monitor.spotify
 
