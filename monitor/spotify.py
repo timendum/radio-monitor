@@ -76,7 +76,7 @@ def find_releases(title: str, performer: str, token: str) -> list[SpSong]:
         findings.append(r)
     if findings:
         findings = sorted(findings, key=lambda r: r.year / r.score)[:5]
-        return sorted(findings, key=lambda r: r.score)
+        return sorted(findings, key=lambda r: r.score, reverse=True)
     return []
 
 
