@@ -69,7 +69,7 @@ def find_releases(title: str, performer: str, token: str) -> list[SpSong]:
             title=item["name"],
             s_performers=s_performers,
             l_performers=tuple(a["name"] for a in item["artists"]),
-            score=calc_score(title, performer, item["name"], s_performers),
+            score=calc_score(title, performer, item["name"], s_performers) or 0.01,
             isrc=item["external_ids"]["isrc"],
             duration=int(item["duration_ms"] / 1000),
         )
