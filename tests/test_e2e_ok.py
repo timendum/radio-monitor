@@ -1,4 +1,5 @@
 """Test to check happy path deejay+spotify"""
+
 import sqlite3
 import unittest
 from pathlib import Path

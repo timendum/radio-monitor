@@ -7,6 +7,7 @@ from typing import Any
 def conn_db() -> sqlite3.Connection:
     return sqlite3.Connection("radio.sqlite3")
 
+
 def insert_into_radio(
     radio: str,
     performer: str,

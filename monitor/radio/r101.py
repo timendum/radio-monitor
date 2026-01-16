@@ -9,5 +9,6 @@ def main(acquisition_id: str) -> None | tuple[str, str, str]:
     )
     return utils.insert_into_radio("101", performer, title, acquisition_id, None, payload)
 
+
 if __name__ == "__main__":
     print(main(utils.generate_batch("101_main")))

@@ -1,4 +1,5 @@
 """Test to check against duplicate title+performer from spotify"""
+
 import sqlite3
 import unittest
 from pathlib import Path

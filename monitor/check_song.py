@@ -186,7 +186,7 @@ def main() -> None:
             mc_song_ids = print_match_candidates(play_id, title, performer, conn)
             decision = (
                 input(
-                    "Action (Quit, Best, id to save, Retry, Spotify, iGnore, Insert Manualy, skip): "
+                    "Action (Quit, Best, id to save, Retry, Spotify, iGnore, Insert, skip): "
                 )
                 .strip()
                 .lower()

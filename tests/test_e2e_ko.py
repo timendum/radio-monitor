@@ -61,7 +61,8 @@ class E2ETestCaseKO(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "deejay")

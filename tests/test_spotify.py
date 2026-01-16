@@ -9,7 +9,7 @@ from monitor import spotify
 class SpotifyTestCase(unittest.TestCase):
     def test_find_releases(self):
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-        with my_vcr.use_cassette("fixtures/sp_fd_police.yml", filter_headers=["Authorization"]): # type: ignore
+        with my_vcr.use_cassette("fixtures/sp_fd_police.yml", filter_headers=["Authorization"]):  # type: ignore
             token = spotify.get_token()
             releases = spotify.find_releases("Synchronicity II", "The Police", token)
         self.assertGreaterEqual(len(releases), 1)

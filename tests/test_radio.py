@@ -27,9 +27,7 @@ class RadiosTestCaseDJ(unittest.TestCase):
     def test_0_db(self):
         # STATION table
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station"
-            ).fetchall()
+            rows = conn.execute("SELECT station_code, display_name, active FROM station").fetchall()
             self.assertTrue(rows)
             self.assertGreater(len(rows), 1)
             self.assertEqual(len([r for r in rows if "deejay" in r[1].lower()]), 1)
@@ -47,7 +45,7 @@ class RadiosTestCaseDJ(unittest.TestCase):
     def test_capital(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-        acquisition_id=utils.generate_batch("e2e_capital")
+        acquisition_id = utils.generate_batch("e2e_capital")
         with my_vcr.use_cassette("fixtures/e2e_capital.yml"):  # type: ignore
             capital.main(acquisition_id)
         with utils.conn_db() as conn:
@@ -59,7 +57,8 @@ class RadiosTestCaseDJ(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "capital")
@@ -73,7 +72,7 @@ class RadiosTestCaseDJ(unittest.TestCase):
     def test_m2o(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-        acquisition_id=utils.generate_batch("e2e_m2o")
+        acquisition_id = utils.generate_batch("e2e_m2o")
         with my_vcr.use_cassette("fixtures/e2e_m2o.yml"):  # type: ignore
             m2o.main(acquisition_id)
         with utils.conn_db() as conn:
@@ -85,7 +84,8 @@ class RadiosTestCaseDJ(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "m2o")
@@ -99,7 +99,7 @@ class RadiosTestCaseDJ(unittest.TestCase):
     def test_r101(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-        acquisition_id=utils.generate_batch("e2e_r101")
+        acquisition_id = utils.generate_batch("e2e_r101")
         with my_vcr.use_cassette("fixtures/e2e_r101.yml"):  # type: ignore
             r101.main(acquisition_id)
         with utils.conn_db() as conn:
@@ -111,7 +111,8 @@ class RadiosTestCaseDJ(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "r101")
@@ -125,7 +126,7 @@ class RadiosTestCaseDJ(unittest.TestCase):
     def test_r105(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-        acquisition_id=utils.generate_batch("e2e_r105")
+        acquisition_id = utils.generate_batch("e2e_r105")
         with my_vcr.use_cassette("fixtures/e2e_r105.yml"):  # type: ignore
             r105.main(acquisition_id)
         with utils.conn_db() as conn:
@@ -137,7 +138,8 @@ class RadiosTestCaseDJ(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "r105")
@@ -151,7 +153,7 @@ class RadiosTestCaseDJ(unittest.TestCase):
     def test_rds(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-        acquisition_id=utils.generate_batch("e2e_rds")
+        acquisition_id = utils.generate_batch("e2e_rds")
         with my_vcr.use_cassette("fixtures/e2e_rds.yml"):  # type: ignore
             rds.main(acquisition_id)
         with utils.conn_db() as conn:
@@ -163,7 +165,8 @@ class RadiosTestCaseDJ(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "rds")
@@ -177,7 +180,7 @@ class RadiosTestCaseDJ(unittest.TestCase):
     def test_dj(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-        acquisition_id=utils.generate_batch("e2e_dj")
+        acquisition_id = utils.generate_batch("e2e_dj")
         with my_vcr.use_cassette("fixtures/e2e_dj.yml"):  # type: ignore
             deejay.main(acquisition_id)
         with utils.conn_db() as conn:
@@ -189,7 +192,8 @@ class RadiosTestCaseDJ(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "deejay")
@@ -203,7 +207,7 @@ class RadiosTestCaseDJ(unittest.TestCase):
     def test_virgin(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-        acquisition_id=utils.generate_batch("e2e_virgin")
+        acquisition_id = utils.generate_batch("e2e_virgin")
         with my_vcr.use_cassette("fixtures/e2e_virgin.yml"):  # type: ignore
             virgin.main(acquisition_id)
         with utils.conn_db() as conn:
@@ -215,7 +219,8 @@ class RadiosTestCaseDJ(unittest.TestCase):
             row = rows[0]
             # Check station id
             s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?", (row[0],)
+                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
+                (row[0],),
             ).fetchone()
             self.assertTrue(s_rows)
             self.assertEqual(s_rows[1].lower(), "virgin")
