@@ -252,6 +252,10 @@ def main() -> None:
         candidates: dict[int, list[Candidate]] = {}
         todos = find_play_todo(conn)
         for play_id, title, performer in todos:
+            if not title.strip() or not performer.strip():
+                # empty parts, do not handle
+                candidates[play_id] = [CAND_TODO]
+                continue
             # DB first
             song_match = db_find(title, performer, conn)
             if song_match:

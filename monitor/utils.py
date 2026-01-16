@@ -19,6 +19,8 @@ def insert_into_radio(
     """Insert a new play into the radio database"""
     performer = performer.strip()
     title = title.strip()
+    if not performer and not title:
+        return None
     with conn_db() as conn:
         if not timestamp:
             timestamp = datetime.now()
