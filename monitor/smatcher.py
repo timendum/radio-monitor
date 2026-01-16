@@ -157,7 +157,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             for p in c.song[0].l_performers
         ),
     )
-    # match_candidate
+    # match_candidate by song title+performers
     conn.executemany(
         """
     INSERT INTO match_candidate
@@ -169,6 +169,19 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             for play_id, cl in candidates.items()
             for c in cl
             if c.song[0] is not None
+        ),
+    )
+    # match_candidate by song id
+    conn.executemany(
+        """
+    INSERT INTO match_candidate
+        (play_id, song_id, candidate_score, method) VALUES
+        (?,       ?,       ?,               ?     )""",
+        (
+            (play_id, c.song[1], c.score, c.method)
+            for play_id, cl in candidates.items()
+            for c in cl
+            if c.song[0] is None
         ),
     )
 

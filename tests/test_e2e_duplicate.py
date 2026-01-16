@@ -1,3 +1,4 @@
+"""Test to check against duplicate title+performer from spotify"""
 import sqlite3
 import unittest
 from pathlib import Path
@@ -6,7 +7,6 @@ import vcr
 from vcr.record_mode import RecordMode
 
 from monitor import db_init, smatcher, utils
-from monitor.radio import deejay
 
 
 def sanity_check(self: unittest.TestCase, conn: sqlite3.Connection):

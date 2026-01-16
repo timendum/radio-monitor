@@ -1,4 +1,5 @@
-"""Test to check happy path deejay+spotify"""
+"""Test to check happy path deejay+db"""
+
 import sqlite3
 import unittest
 from pathlib import Path
@@ -10,40 +11,22 @@ from monitor import db_init, smatcher, utils
 from monitor.radio import deejay
 
 
-def sanity_check(self: unittest.TestCase, conn: sqlite3.Connection):
-    """Sanity check - empty tables"""
-    rows = conn.execute("SELECT artist_id FROM artist").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id, song_title FROM song").fetchall()
-    self.assertEqual(len(rows), 1)
-    self.assertEqual(rows[0][1], "TODO")
-    rows = conn.execute("SELECT song_id FROM song_artist").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id, title FROM song_alias").fetchall()
-    self.assertEqual(len(rows), 1)
-    self.assertEqual(rows[0][1], "TODO")
-    rows = conn.execute("SELECT song_id FROM match_candidate").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id FROM play_resolution").fetchall()
-    self.assertFalse(rows)
-
-
 class E2ETestCaseDJ(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.orig_db = utils.conn_db
         try:
-            Path("test_e2e.sqlite3").unlink()
+            Path("test_e2e_ok_db.sqlite3").unlink()
         except FileNotFoundError:
             pass
 
         def test_conn_db():
-            return sqlite3.Connection("test_e2e.sqlite3")
+            return sqlite3.Connection("test_e2e_ok_db.sqlite3")
 
         utils.conn_db = test_conn_db
         db_init.main()
 
-    def test_1a_dj(self):
+    def test_1_dj(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
         acquisition_id = utils.generate_batch("e2e_dj")
@@ -67,11 +50,8 @@ class E2ETestCaseDJ(unittest.TestCase):
             self.assertEqual(row[2], "GREEN DAY")
             self.assertEqual(row[3], acquisition_id)
 
-    def test_1b_match(self):
-        """Perform a match against Spotify and verify db"""
+    def test_1_insert_song_db(self):
         with utils.conn_db() as conn:
-            sanity_check(self, conn)
-            # Play id from test_1a_dj
             p_rows = conn.execute("SELECT play_id, title_raw, performer_raw FROM play").fetchall()
             self.assertEqual(len(p_rows), 1)
             self.assertEqual(len(p_rows[0]), 3)
@@ -79,9 +59,31 @@ class E2ETestCaseDJ(unittest.TestCase):
             self.assertIsInstance(play_id, int)
             self.assertIsInstance(ptitle, str)
             self.assertIsInstance(pperformer, str)
-            my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-            with my_vcr.use_cassette("fixtures/e2e_2b_match.yml", filter_headers=["Authorization"]):  # type: ignore
-                smatcher.main()
+            play_id = p_rows[0][0]
+            smatcher.save_candidates(
+                {
+                    play_id: [
+                        smatcher.Candidate(
+                            (
+                                smatcher.Song(
+                                    "When I Come Around",
+                                    "Green Day",
+                                    ("Green Day",),
+                                    "USRE19900154",
+                                    1994,
+                                    "US",
+                                    178,
+                                ),
+                                None,
+                            ),
+                            1,
+                            "test",
+                        )
+                    ]
+                },
+                conn,
+            )
+            conn.execute("DELETE FROM match_candidate").fetchone()
             # artist
             rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
             artist_ids = []
@@ -119,6 +121,18 @@ class E2ETestCaseDJ(unittest.TestCase):
                     "SELECT song_id FROM song_alias WHERE song_id = ?", (song_id,)
                 ).fetchall()
                 self.assertEqual(len(rows), 1)
+
+    def test_3_match(self):
+        """Perform a match against Spotify and verify db"""
+        with utils.conn_db() as conn:
+            # Play id from test_1a_dj
+            p_rows = conn.execute("SELECT play_id, title_raw, performer_raw FROM play").fetchall()
+            play_id, _, _ = p_rows[0]
+            my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
+            with my_vcr.use_cassette(
+                "fixtures/e2e_smatcher_no_call.yml", filter_headers=["Authorization"]
+            ):  # type: ignore
+                smatcher.main()
             # TEST: Every play row has at least one match_candidate row
             rows = conn.execute(
                 "SELECT song_id FROM match_candidate WHERE play_id=?", (play_id,)
