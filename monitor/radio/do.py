@@ -1,3 +1,5 @@
+import httpx
+
 from monitor import utils
 from monitor.radio import capital, deejay, freccia, m2o, r101, r105, rds, rtl, virgin
 
@@ -8,6 +10,8 @@ def main() -> None:
     for modu in modules:
         try:
             modu.main(acquisition_id)
+        except httpx.ReadTimeout:
+            print(f"Radio {modu} in timeout")
         except BaseException:
             import traceback
 
