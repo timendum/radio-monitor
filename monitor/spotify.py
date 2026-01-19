@@ -53,27 +53,27 @@ def find_releases(title: str, performer: str, token: str) -> list[SpSong]:
         return []
     tree = r.json()
     findings: list[SpSong] = []
-    for item in tree["tracks"]["items"]:
-        country = "XX"
-        try:
-            country = item["external_ids"]["isrc"][:2]
-        except BaseException:
-            pass
-        # for suff in ("(with ", "(feat"):
-        #     if suff in title and title.find(suff) > 2:
-        #         title = title[: title.find(suff)].strip()
-        s_performers = ", ".join(a["name"] for a in item["artists"])
-        r = SpSong(
-            year=int(item["album"]["release_date"][:4]),
-            country=country,
-            title=item["name"],
-            s_performers=s_performers,
-            l_performers=tuple(a["name"] for a in item["artists"]),
-            score=calc_score(title, performer, item["name"], s_performers) or 0.01,
-            isrc=item["external_ids"]["isrc"],
-            duration=int(item["duration_ms"] / 1000),
-        )
-        findings.append(r)
+    try:
+        for item in tree["tracks"]["items"]:
+            country = "XX"
+            try:
+                country = item["external_ids"]["isrc"][:2]
+            except BaseException:
+                pass
+            s_performers = ", ".join(a["name"] for a in item["artists"])
+            r = SpSong(
+                year=int(item["album"]["release_date"][:4]),
+                country=country,
+                title=item["name"],
+                s_performers=s_performers,
+                l_performers=tuple(a["name"] for a in item["artists"]),
+                score=calc_score(title, performer, item["name"], s_performers) or 0.01,
+                isrc=item["external_ids"].get("isrc", ""),
+                duration=int(item["duration_ms"] / 1000),
+            )
+            findings.append(r)
+    except KeyError:
+        pass
     if findings:
         findings = sorted(findings, key=lambda r: r.year / r.score)[:5]
         return sorted(findings, key=lambda r: r.score, reverse=True)
