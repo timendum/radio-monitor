@@ -7,11 +7,11 @@ from monitor.radio import capital, deejay, freccia, m2o, r101, r105, rds, rtl, v
 def main() -> None:
     modules = [capital, deejay, freccia, m2o, r101, r105, rds, rtl, virgin]
     acquisition_id = utils.generate_batch("do")
-    for modu in modules:
+    for module in modules:
         try:
-            modu.main(acquisition_id)
+            module.main(acquisition_id)
         except httpx.ReadTimeout:
-            print(f"Radio {modu} in timeout")
+            print(f"Radio {module.__package__} in timeout")
         except BaseException:
             import traceback
 
