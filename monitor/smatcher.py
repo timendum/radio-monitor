@@ -91,14 +91,17 @@ def db_find(title: str, performer: str, conn: sqlite3.Connection) -> list[tuple[
     return sorted(rows, key=lambda r: r[1], reverse=True)[:5]
 
 
-def find_play_todo(conn: sqlite3.Connection) -> list[Any]:
-    return conn.execute("""
+def find_play_todo(conn: sqlite3.Connection, limit=20) -> list[Any]:
+    return conn.execute(
+        """
 SELECT p.play_id, p.title_raw, p.performer_raw
 FROM play AS p
 LEFT JOIN match_candidate AS mc ON mc.play_id = p.play_id
 WHERE mc.play_id IS NULL
 ORDER BY p.inserted_at ASC
-LIMIT 20""").fetchall()
+LIMIT ?""",
+        (limit,),
+    ).fetchall()
 
 
 CAND_TODO = Candidate((Song("TODO", "TODO", (), None, 0, "", 0), None), 0, "todo")
@@ -249,32 +252,38 @@ def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
 
 def main() -> None:
     with utils.conn_db() as conn:
-        candidates: dict[int, list[Candidate]] = {}
-        todos = find_play_todo(conn)
-        for play_id, title, performer in todos:
-            if not title.strip() or not performer.strip():
-                # empty parts, do not handle
-                candidates[play_id] = [CAND_TODO]
-                continue
-            # DB first
-            song_match = db_find(title, performer, conn)
-            if song_match:
-                candidates[play_id] = [Candidate((None, s[0]), s[1], "db") for s in song_match]
-            if play_id not in candidates:
-                releases = spotify_find(title, performer, get_token())
-                if releases:
-                    candidates[play_id] = [
-                        Candidate((Song.from_spotify(ss), None), ss.score, "spotify")
-                        for ss in releases
-                    ]
-                sleep(1)
-            if play_id not in candidates:
-                # Generate one fake candidate
-                candidates[play_id] = [CAND_TODO]
-        save_candidates(candidates, conn)
-        conn.commit()
-        save_resolution(candidates, conn)
-        conn.commit()
+        spotify_limit = 20
+        while spotify_limit > 0:
+            candidates: dict[int, list[Candidate]] = {}
+            todos = find_play_todo(conn, spotify_limit)
+            if not todos:
+                break
+            for play_id, title, performer in todos:
+                if not title.strip() or not performer.strip():
+                    # empty parts, do not handle
+                    candidates[play_id] = [CAND_TODO]
+                    continue
+                # DB first
+                song_match = db_find(title, performer, conn)
+                if song_match:
+                    candidates[play_id] = [Candidate((None, s[0]), s[1], "db") for s in song_match]
+                if play_id not in candidates:
+                    releases = spotify_find(title, performer, get_token())
+                    if releases:
+                        candidates[play_id] = [
+                            Candidate((Song.from_spotify(ss), None), ss.score, "spotify")
+                            for ss in releases
+                        ]
+                    spotify_limit -= 1
+                    sleep(1)
+                if play_id not in candidates:
+                    # Generate one fake candidate
+                    candidates[play_id] = [CAND_TODO]
+            save_candidates(candidates, conn)
+            conn.commit()
+            save_resolution(candidates, conn)
+            conn.commit()
+            spotify_limit -= 1
 
 
 if __name__ == "__main__":
