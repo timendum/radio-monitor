@@ -1,3 +1,4 @@
+from functools import lru_cache
 import sqlite3
 import unicodedata
 from time import sleep
@@ -21,10 +22,9 @@ class Song(NamedTuple):
     def from_spotify(cls, s: SpSong) -> "Song":
         return cls(s.title, s.s_performers, s.l_performers, s.isrc, s.year, s.country, s.duration)
 
-    @staticmethod
-    def unique_key(title: str, performers: str) -> str:
-        atitle = unicodedata.normalize("NFKD", title).encode("ascii", "ignore")
-        aperformers = unicodedata.normalize("NFKD", performers).encode("ascii", "ignore")
+    def unique_key(self) -> str:
+        atitle = unicodedata.normalize("NFKD", self.title).encode("ascii", "ignore")
+        aperformers = unicodedata.normalize("NFKD", self.s_performers).encode("ascii", "ignore")
         return (atitle + b"|" + aperformers).decode("ascii").lower()
 
 
@@ -120,7 +120,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             (
                 c.song[0].title,
                 c.song[0].s_performers,
-                Song.unique_key(c.song[0].title, c.song[0].s_performers),
+                c.song[0].unique_key(),
                 c.song[0].isrc,
                 c.song[0].year,
                 c.song[0].country,
@@ -250,6 +250,27 @@ def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
         )
 
 
+def unique_candidates(candidates: dict[int, list[Candidate]]) -> dict[int, list[Candidate]]:
+    """Keep only one candidate for song
+    in case of multiple songs with the same title+performer (and different year/country/...)"""
+    new_candidates = dict[int, list[Candidate]]()
+    for play_id, candidates_list in candidates.items():
+        if candidates_list != sorted(candidates_list, key=lambda c: c.score, reverse=True):
+            raise ValueError("Candidates list not sorted")
+        seen = set[str]()
+        oks = list[Candidate]()
+        for candidate in candidates_list:
+            if not candidate.song[0]:
+                oks.append(candidate)
+                continue
+            k = candidate.song[0].unique_key()
+            if k not in seen:
+                oks.append(candidate)
+                seen.add(k)
+        new_candidates[play_id] = oks
+    return new_candidates
+
+
 def main() -> None:
     with utils.conn_db() as conn:
         spotify_limit = 20
@@ -268,6 +289,7 @@ def main() -> None:
                 if song_match:
                     candidates[play_id] = [Candidate((None, s[0]), s[1], "db") for s in song_match]
                 if play_id not in candidates:
+                    releases = []
                     releases = spotify_find(title, performer, get_token())
                     if releases:
                         candidates[play_id] = [
@@ -279,6 +301,7 @@ def main() -> None:
                 if play_id not in candidates:
                     # Generate one fake candidate
                     candidates[play_id] = [CAND_TODO]
+            candidates = unique_candidates(candidates)
             save_candidates(candidates, conn)
             conn.commit()
             save_resolution(candidates, conn)

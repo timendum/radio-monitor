@@ -187,9 +187,10 @@ CREATE TABLE match_candidate (
   generated_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
+CREATE UNIQUE INDEX ux_candidate_play_song ON match_candidate(play_id, song_id);
 CREATE INDEX idx_candidate_play ON match_candidate(play_id);
 CREATE INDEX idx_candidate_song ON match_candidate(song_id);
-CREATE INDEX idx_candidate_score ON match_candidate(candidate_score);
+
 
 -- Final mapping of a play to its canonical song
 CREATE TABLE play_resolution (

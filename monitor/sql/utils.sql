@@ -35,3 +35,23 @@ SELECT
         pr.chosen_score > 0 AND pr.chosen_score < 0.7
 ORDER BY pr.decided_at DESC
 LIMIT 20;
+
+
+-- Remove duplicated match_candidate
+WITH ranked AS (
+  SELECT
+    candidate_id,
+    play_id,
+    song_id,
+    ROW_NUMBER() OVER (
+      PARTITION BY play_id, song_id
+      ORDER BY candidate_score DESC, candidate_id ASC
+    ) AS rn
+  FROM match_candidate
+)
+DELETE FROM match_candidate
+WHERE candidate_id IN (
+  SELECT candidate_id
+  FROM ranked
+  WHERE rn > 1
+);
