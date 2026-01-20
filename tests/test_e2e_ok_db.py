@@ -1,6 +1,5 @@
 """Test to check happy path deejay+db"""
 
-import sqlite3
 import unittest
 from pathlib import Path
 
@@ -20,8 +19,8 @@ class E2ETestCaseDJ(unittest.TestCase):
         except FileNotFoundError:
             pass
 
-        def test_conn_db():
-            return sqlite3.Connection("test_e2e_ok_db.sqlite3")
+        def test_conn_db(path=""):
+            return cls.orig_db("test_e2e_ok_db.sqlite3")
 
         utils.conn_db = test_conn_db
         db_init.main()
@@ -84,6 +83,7 @@ class E2ETestCaseDJ(unittest.TestCase):
                 conn,
             )
             conn.execute("DELETE FROM match_candidate").fetchone()
+            conn.commit()
             # artist
             rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
             artist_ids = []

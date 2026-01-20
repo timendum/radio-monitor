@@ -1,4 +1,3 @@
-import sqlite3
 import unittest
 from pathlib import Path
 
@@ -18,8 +17,8 @@ class RadiosTestCaseDJ(unittest.TestCase):
         except FileNotFoundError:
             pass
 
-        def test_conn_db():
-            return sqlite3.Connection("test_radio.sqlite3")
+        def test_conn_db(path=""):
+            return cls.orig_db("test_radio.sqlite3")
 
         utils.conn_db = test_conn_db
         db_init.main()

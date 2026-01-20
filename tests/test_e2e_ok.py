@@ -38,8 +38,8 @@ class E2ETestCaseDJ(unittest.TestCase):
         except FileNotFoundError:
             pass
 
-        def test_conn_db():
-            return sqlite3.Connection("test_e2e.sqlite3")
+        def test_conn_db(path=""):
+            return cls.orig_db("test_e2e.sqlite3")
 
         utils.conn_db = test_conn_db
         db_init.main()

@@ -1,13 +1,21 @@
 import re
 import sqlite3
 import unicodedata
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from difflib import SequenceMatcher
 from typing import Any
 
 
-def conn_db() -> sqlite3.Connection:
-    return sqlite3.Connection("radio.sqlite3")
+@contextmanager
+def conn_db(path="radio.sqlite3") -> Iterator[sqlite3.Connection]:
+    conn = sqlite3.Connection(path)
+    try:
+        yield conn
+    finally:
+        conn.commit()
+        conn.close()
 
 
 def insert_into_radio(
@@ -93,7 +101,9 @@ def __string_match(a: str, b: str) -> float:
     sm = SequenceMatcher(None, a, b)
     return sm.ratio()
 
+
 JUNK = {"and", "feat", "feature"}
+
 
 def __string_smart_diff(a: str, b: str) -> float:
     a_words = set(re.split(r"\W+", a))

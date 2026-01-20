@@ -186,6 +186,7 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             if c.song[0] is None
         ),
     )
+    conn.commit()
 
 
 def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, str]:
@@ -221,14 +222,14 @@ def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, st
     return resolution if resolution else CAND_TODO, status
 
 
-def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection):
+def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection) -> None:
     for play_id, candidates_list in candidates.items():
         resolution, status = find_best_candidate(candidates_list)
         # Save to DB
         song_id = None
         if resolution.song[1] is not None:
             song_id = resolution.song[1]
-        else:
+        elif resolution.song[0] is not None:
             # Look up song_id
             cur = conn.execute(
                 """
@@ -247,6 +248,7 @@ def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             (?,       ?,       ?,            ?     )""",
             (play_id, song_id, resolution.score, status),
         )
+    conn.commit()
 
 
 def unique_candidates(candidates: dict[int, list[Candidate]]) -> dict[int, list[Candidate]]:
@@ -302,9 +304,7 @@ def main() -> None:
                     candidates[play_id] = [CAND_TODO]
             candidates = unique_candidates(candidates)
             save_candidates(candidates, conn)
-            conn.commit()
             save_resolution(candidates, conn)
-            conn.commit()
             spotify_limit -= 1
 
 
