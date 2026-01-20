@@ -83,3 +83,8 @@ mb:
 
 test:
   uv run --env-file .env python -m unittest discover -s tests
+
+pycheck:
+  uvx ruff format --check .
+  uvx ruff check .
+  uvx ty check .
