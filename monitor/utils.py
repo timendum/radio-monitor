@@ -1,4 +1,6 @@
+import re
 import sqlite3
+import unicodedata
 from datetime import datetime
 from difflib import SequenceMatcher
 from typing import Any
@@ -87,25 +89,45 @@ def clear_title(title: str) -> str:
     return title
 
 
+def __string_match(a: str, b: str) -> float:
+    sm = SequenceMatcher(None, a, b)
+    return sm.ratio()
+
+JUNK = {"and", "feat", "feature"}
+
+def __string_smart_diff(a: str, b: str) -> float:
+    a_words = set(re.split(r"\W+", a))
+    b_words = set(re.split(r"\W+", b))
+    a_diff = a_words - b_words - JUNK
+    b_diff = b_words - a_words - JUNK
+    return 1 - ((sum(map(len, a_diff)) + sum(map(len, b_diff))) / (len(a) + len(b)))
+
+
+def __normalize(txt: str) -> str:
+    return (
+        unicodedata.normalize("NFKD", txt.strip()).encode("ascii", "ignore").decode("ascii").lower()
+    )
+
+
 def calc_score(otitle: str, operformer: str, title: str, performer: str) -> float:
     otitle, operformer, title, performer = (
-        otitle.lower().strip(),
-        operformer.lower().strip(),
-        title.lower().strip(),
-        performer.lower().strip(),
+        __normalize(otitle),
+        __normalize(operformer),
+        __normalize(title),
+        __normalize(performer),
     )
     """Return a measure of similarity,
     1 if the title and performer are identical, and 0 if
     they have nothing in common."""
-    # oartist, artist = clear_artist(oartist), clear_artist(artist)
-    # otitle, title = clear_title(otitle), clear_title(title)
-    # try:
-    #     title = title[: title.index("(")].strip()
-    # except BaseException:
-    #     pass
-    rtitle = SequenceMatcher(None, title, otitle).ratio()
-    rartist = SequenceMatcher(None, performer, operformer).ratio()
-    return (rtitle + rartist) / 2
+    w_title = 1.0
+    w_artist = 1.0
+    w_concat = 1.5  # TBV
+    rtitle = __string_match(title, otitle)
+    rartist = __string_match(performer, operformer)
+    rconcat = __string_smart_diff(title + " " + performer, otitle + " " + operformer)
+    return (rtitle * w_title + rartist * w_artist + rconcat * w_concat) / (
+        w_artist + w_title + w_concat
+    )
 
 
 def print_ascii_table(data: list[list[Any]]) -> None:

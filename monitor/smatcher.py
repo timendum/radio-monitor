@@ -1,4 +1,3 @@
-from functools import lru_cache
 import sqlite3
 import unicodedata
 from time import sleep

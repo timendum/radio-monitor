@@ -29,17 +29,70 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(utils.clear_title("Anxiety (2025 version)"), "Anxiety")
         self.assertEqual(utils.clear_title("Anxiety - Remix"), "Anxiety")
 
-    def test_calc_score(self):
+    def test_calc_score_rnd(self):
         title = _random_ascii_alnum(15)
         performer = _random_ascii_alnum(10)
-        self.assertEqual(utils.calc_score(title, performer, title, performer), 1)
-        self.assertEqual(utils.calc_score(title + "  ", performer, title, performer), 1)
-        self.assertEqual(utils.calc_score(title, performer, title.lower(), performer.lower()), 1)
-        self.assertEqual(utils.calc_score(title, performer, title.upper(), performer.upper()), 1)
-        self.assertGreaterEqual(utils.calc_score(title, performer, title[3:], performer), 0.9)
-        self.assertGreaterEqual(utils.calc_score(title, performer, title, performer[2:]), 0.9)
-        self.assertAlmostEqual(utils.calc_score(title, "aaa", title, "bbb"), 0.5)
-        self.assertAlmostEqual(utils.calc_score("111111", performer, "9999999", performer), 0.5)
+        self.assertEqual(utils.calc_score(title, performer, title, performer), 1, "same string")
+        self.assertEqual(
+            utils.calc_score(title + "  ", performer, title, performer), 1, "with more space"
+        )
+        self.assertEqual(
+            utils.calc_score(title, performer, title.upper(), performer.upper()), 1, "uppercase"
+        )
+        self.assertEqual(
+            utils.calc_score(title, performer, title.lower(), performer.lower()), 1, "lowercase"
+        )
+        self.assertGreaterEqual(
+            utils.calc_score(_random_ascii_alnum(3) + " " + title, performer, title, performer),
+            0.9,
+            "almost the same title",
+        )
+        self.assertGreaterEqual(
+            utils.calc_score(title, performer, title, performer + " " + _random_ascii_alnum(3)),
+            0.9,
+            "almost the same performer",
+        )
+        self.assertAlmostEqual(
+            utils.calc_score(title, "aaaaaaaaaaaa", title, "bbbbbbbbb"),
+            0.5,
+            0,
+            "different performer",
+        )
+        self.assertAlmostEqual(
+            utils.calc_score("111111111", performer, "9999999999", performer),
+            0.5,
+            0,
+            "different title",
+        )
+        self.assertGreater(
+            utils.calc_score(
+                title,
+                performer[5:] + " " + performer[:5],
+                title + " " + performer[:5],
+                performer[5:],
+            ),
+            0.7,
+            "performed splitted",
+        )
+
+    def test_calc_score_man(self):
+        self.assertEqual(
+            utils.calc_score("Bonnie and Clyde", "Beyoncé", "Bonnie and Clyde", "Beyonce"),
+            1,
+            "Ascii normalization",
+        )
+        self.assertGreater(
+            utils.calc_score("Bonnie and Clyde", "JAY-Z", "Bonnie & Clyde", "JAY-Z"),
+            0.9,
+            "and to &",
+        )
+        self.assertGreater(
+            utils.calc_score(
+                "Bonnie and Clyde (feat. Beyonce)", "JAY-Z", "Bonnie and Clyde", "JAY-Z, Beyonce"
+            ),
+            0.7,
+            "Bonnie and Clyde - JAY-Z, Beyonce",
+        )
 
 
 if __name__ == "__main__":
