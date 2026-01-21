@@ -84,6 +84,8 @@ def db_find(title: str, performer: str, conn: sqlite3.Connection) -> list[tuple[
         v.song_id,
         s.song_title,
         s.song_performers,
+        v.title,
+        v.performers,
         bm25(song_fts) AS score
     FROM song_fts AS fts
     JOIN song_alias AS v ON v.song_alias_id = fts.rowid
@@ -94,7 +96,15 @@ def db_find(title: str, performer: str, conn: sqlite3.Connection) -> list[tuple[
     """
 
     cur = conn.execute(sql, (match_expr,))
-    rows = [(row[0], calc_score(title, performer, row[1], row[2])) for row in cur.fetchall()]
+    rows = [
+        (
+            row[0],
+            1.0
+            if calc_score(title, performer, row[3], row[4])  # perfect alias match
+            else calc_score(title, performer, row[1], row[2]),
+        )
+        for row in cur.fetchall()
+    ]
     return sorted(rows, key=lambda r: r[1], reverse=True)[:5]
 
 
@@ -119,7 +129,7 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
     # SONG
     conn.executemany(
         """
-    INSERT OR IGNORE INTO song
+    INSERT OR REPLACE INTO song
         (song_title, song_performers, song_key, isrc, year, country, duration) VALUES
         (?,          ?,               ?,        ?,    ?,    ?,       ?     )""",
         (
@@ -202,7 +212,7 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
 
 
 def find_best_candidate(
-    candidates_list: CandidateList,
+    candidates_list: CandidateList, best_status: str
 ) -> tuple[CandidateByID | CandidateBySong, str]:
     resolution = None
     status = "pending"
@@ -237,11 +247,11 @@ def find_best_candidate(
 
 
 def save_resolution(
-    candidates: dict[int, CandidateList], conn: sqlite3.Connection
+    candidates: dict[int, CandidateList], conn: sqlite3.Connection, best_status="auto"
 ) -> dict[int, bool]:
     resolution_map = dict[int, bool]()
     for play_id, candidates_list in candidates.items():
-        resolution, status = find_best_candidate(candidates_list)
+        resolution, status = find_best_candidate(candidates_list, best_status)
         # Save to DB
         song_id = None
         if isinstance(resolution, CandidateByID):
