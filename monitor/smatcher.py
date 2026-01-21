@@ -27,11 +27,19 @@ class Song(NamedTuple):
         return (atitle + b"|" + aperformers).decode("ascii").lower()
 
 
-class Candidate(NamedTuple):
-    song: tuple[Song, None] | tuple[None, int]
-    """ Song or song_id"""
+class CandidateByID(NamedTuple):
+    song_id: int
     score: float
     method: str
+
+
+class CandidateBySong(NamedTuple):
+    song: Song
+    score: float
+    method: str
+
+
+type CandidateList = list[CandidateByID] | list[CandidateBySong]
 
 
 def quote_phrase(s: str) -> str:
@@ -103,12 +111,11 @@ LIMIT ?""",
     ).fetchall()
 
 
-CAND_TODO = Candidate((Song("TODO", "TODO", (), None, 0, "", 0), None), 0, "todo")
+CAND_TODO = CandidateBySong(Song("TODO", "TODO", (), None, 0, "", 0), 0, "todo")
+CAND_IGNORED = CandidateBySong(Song("TODO", "TODO", (), None, 1, "", 0), 1, "todo")
 
-CAND_IGNORED = Candidate((Song("TODO", "TODO", (), None, 1, "", 0), None), 1, "")
 
-
-def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection):
+def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connection):
     # SONG
     conn.executemany(
         """
@@ -117,17 +124,17 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
         (?,          ?,               ?,        ?,    ?,    ?,       ?     )""",
         (
             (
-                c.song[0].title,
-                c.song[0].s_performers,
-                c.song[0].unique_key(),
-                c.song[0].isrc,
-                c.song[0].year,
-                c.song[0].country,
-                c.song[0].duration,
+                c.song.title,
+                c.song.s_performers,
+                c.song.unique_key(),
+                c.song.isrc,
+                c.song.year,
+                c.song.country,
+                c.song.duration,
             )
             for cl in candidates.values()
             for c in cl
-            if c != CAND_TODO and c != CAND_IGNORED and c.song[0] is not None
+            if c != CAND_TODO and c != CAND_IGNORED and isinstance(c, CandidateBySong)
         ),
     )
     # artist
@@ -140,8 +147,8 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             (p,)
             for cl in candidates.values()
             for c in cl
-            if c != CAND_TODO and c != CAND_IGNORED and c.song[0] is not None
-            for p in c.song[0].l_performers
+            if c != CAND_TODO and c != CAND_IGNORED and isinstance(c, CandidateBySong)
+            for p in c.song.l_performers
         ),
     )
     # song_artist
@@ -152,12 +159,17 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
         ((SELECT s.song_id FROM song s WHERE song_title = ? AND song_performers = ?),
                   (SELECT artist_id FROM artist WHERE artist_name = ?))""",
         (
-            (c.song[0].title, c.song[0].s_performers, p)
+            (c.song.title, c.song.s_performers, p)
             for cl in candidates.values()
             for c in cl
-            if c != CAND_TODO and c != CAND_IGNORED and c.song[0] is not None
-            for p in c.song[0].l_performers
+            if c != CAND_TODO and c != CAND_IGNORED and isinstance(c, CandidateBySong)
+            for p in c.song.l_performers
         ),
+    )
+    # clean previous candidates
+    conn.executemany(
+        "DELETE FROM match_candidate WHERE play_id = ?",
+        ((play_id,) for play_id in candidates.keys()),
     )
     # match_candidate by song title+performers
     conn.executemany(
@@ -167,10 +179,10 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
         (?,       (SELECT s.song_id from song s where song_title = ? AND song_performers = ?),
                            ?,               ?     )""",
         (
-            (play_id, c.song[0].title, c.song[0].s_performers, c.score, c.method)
+            (play_id, c.song.title, c.song.s_performers, c.score, c.method)
             for play_id, cl in candidates.items()
             for c in cl
-            if c.song[0] is not None
+            if isinstance(c, CandidateBySong)
         ),
     )
     # match_candidate by song id
@@ -180,16 +192,18 @@ def save_candidates(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
         (play_id, song_id, candidate_score, method) VALUES
         (?,       ?,       ?,               ?     )""",
         (
-            (play_id, c.song[1], c.score, c.method)
+            (play_id, c.song_id, c.score, c.method)
             for play_id, cl in candidates.items()
             for c in cl
-            if c.song[0] is None
+            if isinstance(c, CandidateByID)
         ),
     )
     conn.commit()
 
 
-def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, str]:
+def find_best_candidate(
+    candidates_list: CandidateList,
+) -> tuple[CandidateByID | CandidateBySong, str]:
     resolution = None
     status = "pending"
     if not candidates_list:
@@ -222,20 +236,23 @@ def find_best_candidate(candidates_list: list[Candidate]) -> tuple[Candidate, st
     return resolution if resolution else CAND_TODO, status
 
 
-def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connection) -> None:
+def save_resolution(
+    candidates: dict[int, CandidateList], conn: sqlite3.Connection
+) -> dict[int, bool]:
+    resolution_map = dict[int, bool]()
     for play_id, candidates_list in candidates.items():
         resolution, status = find_best_candidate(candidates_list)
         # Save to DB
         song_id = None
-        if resolution.song[1] is not None:
-            song_id = resolution.song[1]
-        elif resolution.song[0] is not None:
+        if isinstance(resolution, CandidateByID):
+            song_id = resolution.song_id
+        else:
             # Look up song_id
             cur = conn.execute(
                 """
             SELECT song_id FROM song
             WHERE song_title = ? AND song_performers = ?""",
-                (resolution.song[0].title, resolution.song[0].s_performers),
+                (resolution.song.title, resolution.song.s_performers),
             )
             row = cur.fetchone()
             if row:
@@ -248,35 +265,55 @@ def save_resolution(candidates: dict[int, list[Candidate]], conn: sqlite3.Connec
             (?,       ?,       ?,            ?     )""",
             (play_id, song_id, resolution.score, status),
         )
+        resolution_map[play_id] = status != "pending"
     conn.commit()
+    return resolution_map
 
 
-def unique_candidates(candidates: dict[int, list[Candidate]]) -> dict[int, list[Candidate]]:
+def unique_candidates(candidates: dict[int, CandidateList]) -> dict[int, CandidateList]:
     """Keep only one candidate for song
     in case of multiple songs with the same title+performer (and different year/country/...)"""
-    new_candidates = dict[int, list[Candidate]]()
+    new_candidates_list = dict[int, CandidateList]()
     for play_id, candidates_list in candidates.items():
         if candidates_list != sorted(candidates_list, key=lambda c: c.score, reverse=True):
             raise ValueError("Candidates list not sorted")
-        seen = set[str]()
-        oks = list[Candidate]()
+        seen_song = dict[str, CandidateBySong]()
+        seen_id = dict[int, CandidateByID]()
+        oks = list[CandidateBySong | CandidateByID]()
         for candidate in candidates_list:
-            if not candidate.song[0]:
-                oks.append(candidate)
-                continue
-            k = candidate.song[0].unique_key()
-            if k not in seen:
-                oks.append(candidate)
-                seen.add(k)
-        new_candidates[play_id] = oks
-    return new_candidates
+            if isinstance(candidate, CandidateByID):
+                if candidate.song_id not in seen_id:
+                    oks.append(candidate)
+                    seen_id[candidate.song_id] = candidate
+            else:
+                k = candidate.song.unique_key()
+                if k not in seen_song:
+                    seen_song[k] = candidate
+                else:
+                    # Keep best
+                    if candidate.score > seen_song[k].score:
+                        seen_song[k] = candidate
+                    # Or keep older
+                    elif candidate.song.year > 1:
+                        if (
+                            seen_song[k].song.year <= 1
+                            or seen_song[k].song.year > candidate.song.year
+                        ):
+                            seen_song[k] = candidate
+        if seen_id and seen_song:
+            raise ValueError(f"Mixed candidate types for play {play_id}")
+        if seen_id:
+            new_candidates_list[play_id] = list(seen_id.values())
+        else:
+            new_candidates_list[play_id] = list(seen_song.values())
+    return new_candidates_list
 
 
 def main() -> None:
     with utils.conn_db() as conn:
         spotify_limit = 20
         while spotify_limit > 0:
-            candidates: dict[int, list[Candidate]] = {}
+            candidates: dict[int, CandidateList] = {}
             todos = find_play_todo(conn, spotify_limit)
             if not todos:
                 break
@@ -288,13 +325,13 @@ def main() -> None:
                 # DB first
                 song_match = db_find(title, performer, conn)
                 if song_match:
-                    candidates[play_id] = [Candidate((None, s[0]), s[1], "db") for s in song_match]
+                    candidates[play_id] = [CandidateByID(s[0], s[1], "db") for s in song_match]
                 if play_id not in candidates:
                     releases = []
                     releases = spotify_find(title, performer, get_token())
                     if releases:
                         candidates[play_id] = [
-                            Candidate((Song.from_spotify(ss), None), ss.score, "spotify")
+                            CandidateBySong(Song.from_spotify(ss), ss.score, "spotify")
                             for ss in releases
                         ]
                     spotify_limit -= 1

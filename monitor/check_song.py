@@ -1,7 +1,7 @@
 import sqlite3
 
 from monitor import smatcher, utils
-from monitor.smatcher import Candidate, Song, db_find
+from monitor.smatcher import CandidateByID, CandidateBySong, CandidateList, Song, db_find
 from monitor.utils import print_ascii_table
 
 
@@ -98,8 +98,8 @@ def input_from_user(full=True) -> Song | None:
 
 
 def save_human_alias(r: Song, play_id: int, conn: sqlite3.Connection) -> None:
-    c = Candidate((r, None), 1, "human")
-    candidates: dict[int, list[Candidate]] = {}
+    c = CandidateBySong(r, 1, "human")
+    candidates: dict[int, CandidateList] = {}
     candidates[play_id] = [c]
     smatcher.save_candidates(candidates, conn)
     smatcher.save_resolution(candidates, conn)
@@ -168,19 +168,20 @@ def main() -> None:
                 break
             play_id, _ = to_check
             last_id = play_id
-            candidates: dict[int, list[Candidate]] = {}
+            candidates: dict[int, CandidateList] = {}
             # check again on DB, maybe something new is there
             title, performer = find_play(play_id, conn)
             song_match = db_find(title, performer, conn)
             if song_match:
                 # Found in DB!
-                candidates[play_id] = [Candidate((None, s[0]), s[1], "db") for s in song_match]
+                candidates[play_id] = [CandidateByID(s[0], s[1], "db") for s in song_match]
                 smatcher.save_candidates(candidates, conn)
-                smatcher.save_resolution(candidates, conn)
+                res = smatcher.save_resolution(candidates, conn)
                 conn.commit()
-                last_id -= 1
-                # go back and check if fixed
-                continue
+                if res[play_id]:
+                    # go back and check if fixed
+                    last_id -= 1
+                    continue
             ncount = count_todo(last_id, conn)
             print(f"ID: {play_id} (todo: {ncount})")
             mc_song_ids = print_match_candidates(play_id, title, performer, conn)
@@ -192,22 +193,27 @@ def main() -> None:
             try:
                 song_id = int(decision)
                 if song_id in mc_song_ids:
-                    smatcher.save_resolution(
-                        {play_id: [Candidate((None, song_id), 1, "human")]}, conn
-                    )
-                    conn.commit()
+                    smatcher.save_resolution({play_id: [CandidateByID(song_id, 1, "human")]}, conn)
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
             except ValueError:
                 pass
             match decision:
                 case "q":
+                    # Quit
                     break
+                case "b":
+                    # Save best candidate
+                    song_id = mc_song_ids[0]
+                    smatcher.save_resolution({play_id: [CandidateByID(song_id, 1, "human")]}, conn)
+                    print(f" -> Saved {song_id} for play {play_id}")
+                    continue
                 case "r":
+                    # Retry spotify search
                     releases = smatcher.spotify_find(title, performer, token)
                     if releases:
                         candidates[play_id] = [
-                            Candidate((Song.from_spotify(ss), None), ss.score, "spotify")
+                            CandidateBySong(Song.from_spotify(ss), ss.score, "spotify")
                             for ss in releases
                         ]
                         smatcher.save_candidates(candidates, conn)
@@ -218,17 +224,21 @@ def main() -> None:
                     print(" -> No spotify results")
                     continue
                 case "s":
+                    # Query Spotify with manual input for title+performer
                     r = query_spotify(play_id, token, conn)
                     if not r:
                         last_id -= 1
                     continue
                 case "e":
+                    # Manual insert song
                     ask_user(play_id, conn)
                     continue
                 case "i":
+                    # Manual insert song
                     ask_user(play_id, conn)
                     continue
                 case "g":
+                    # I*g*nore
                     candidates[play_id] = [smatcher.CAND_IGNORED]
                     smatcher.save_candidates(candidates, conn)
                     smatcher.save_resolution(candidates, conn)
@@ -236,6 +246,7 @@ def main() -> None:
                     print(" -> Ignored!")
                     continue
                 case _:
+                    # Other, skip
                     print(" -> Skipped!")
                     continue
             break

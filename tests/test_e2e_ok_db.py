@@ -62,18 +62,15 @@ class E2ETestCaseDJ(unittest.TestCase):
             smatcher.save_candidates(
                 {
                     play_id: [
-                        smatcher.Candidate(
-                            (
-                                smatcher.Song(
-                                    "When I Come Around",
-                                    "Green Day",
-                                    ("Green Day",),
-                                    "USRE19900154",
-                                    1994,
-                                    "US",
-                                    178,
-                                ),
-                                None,
+                        smatcher.CandidateBySong(
+                            smatcher.Song(
+                                "When I Come Around",
+                                "Green Day",
+                                ("Green Day",),
+                                "USRE19900154",
+                                1994,
+                                "US",
+                                178,
                             ),
                             1,
                             "test",
