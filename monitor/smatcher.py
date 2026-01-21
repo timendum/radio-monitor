@@ -212,7 +212,7 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
 
 
 def find_best_candidate(
-    candidates_list: CandidateList, best_status: str
+    candidates_list: CandidateList, reason: str
 ) -> tuple[CandidateByID | CandidateBySong, str]:
     resolution = None
     status = "pending"
@@ -247,11 +247,11 @@ def find_best_candidate(
 
 
 def save_resolution(
-    candidates: dict[int, CandidateList], conn: sqlite3.Connection, best_status="auto"
+    candidates: dict[int, CandidateList], conn: sqlite3.Connection, reason="auto"
 ) -> dict[int, bool]:
     resolution_map = dict[int, bool]()
     for play_id, candidates_list in candidates.items():
-        resolution, status = find_best_candidate(candidates_list, best_status)
+        resolution, status = find_best_candidate(candidates_list, reason)
         # Save to DB
         song_id = None
         if isinstance(resolution, CandidateByID):

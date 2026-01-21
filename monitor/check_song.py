@@ -102,7 +102,7 @@ def save_human_alias(r: Song, play_id: int, conn: sqlite3.Connection) -> None:
     candidates: dict[int, CandidateList] = {}
     candidates[play_id] = [c]
     smatcher.save_candidates(candidates, conn)
-    smatcher.save_resolution(candidates, conn)
+    smatcher.save_resolution(candidates, conn, "human")
     conn.execute(
         """
         INSERT INTO song_alias
@@ -193,7 +193,9 @@ def main() -> None:
             try:
                 song_id = int(decision)
                 if song_id in mc_song_ids:
-                    smatcher.save_resolution({play_id: [CandidateByID(song_id, 1, "human")]}, conn)
+                    smatcher.save_resolution(
+                        {play_id: [CandidateByID(song_id, 1, "human")]}, conn, "human"
+                    )
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
             except ValueError:
@@ -205,7 +207,9 @@ def main() -> None:
                 case "b":
                     # Save best candidate
                     song_id = mc_song_ids[0]
-                    smatcher.save_resolution({play_id: [CandidateByID(song_id, 1, "human")]}, conn)
+                    smatcher.save_resolution(
+                        {play_id: [CandidateByID(song_id, 1, "human")]}, conn, "human"
+                    )
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
                 case "r":
@@ -213,7 +217,7 @@ def main() -> None:
                     releases = smatcher.spotify_find(title, performer, token)
                     if releases:
                         candidates[play_id] = [
-                            CandidateBySong(Song.from_spotify(ss), ss.score, "spotify")
+                            CandidateBySong(Song.from_spotify(ss), ss.score, "mspotify")
                             for ss in releases
                         ]
                         smatcher.save_candidates(candidates, conn)
@@ -241,7 +245,7 @@ def main() -> None:
                     # I*g*nore
                     candidates[play_id] = [smatcher.CAND_IGNORED]
                     smatcher.save_candidates(candidates, conn)
-                    smatcher.save_resolution(candidates, conn)
+                    smatcher.save_resolution(candidates, conn, "ignore")
                     conn.commit()
                     print(" -> Ignored!")
                     continue
