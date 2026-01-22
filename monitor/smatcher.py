@@ -95,15 +95,14 @@ def db_find(title: str, performer: str, conn: sqlite3.Connection) -> list[tuple[
     LIMIT 10
     """
 
-    cur = conn.execute(sql, (match_expr,))
     rows = [
         (
             row[0],
             1.0
-            if calc_score(title, performer, row[3], row[4])  # perfect alias match
+            if calc_score(title, performer, row[3], row[4]) == 1.0  # perfect alias match
             else calc_score(title, performer, row[1], row[2]),
         )
-        for row in cur.fetchall()
+        for row in conn.execute(sql, (match_expr,)).fetchall()
     ]
     return sorted(rows, key=lambda r: r[1], reverse=True)[:5]
 
