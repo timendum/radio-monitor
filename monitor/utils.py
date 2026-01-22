@@ -106,6 +106,7 @@ JUNK = {"and", "feat", "feature"}
 
 
 def __string_smart_diff(a: str, b: str) -> float:
+    """Return the similarity between two strings based on set of words appearing in each."""
     a_words = set(re.split(r"\W+", a))
     b_words = set(re.split(r"\W+", b))
     a_diff = a_words - b_words - JUNK
@@ -129,14 +130,18 @@ def calc_score(otitle: str, operformer: str, title: str, performer: str) -> floa
     """Return a measure of similarity,
     1 if the title and performer are identical, and 0 if
     they have nothing in common."""
+    if otitle == title and operformer == performer:
+        return 1.0
     w_title = 1.0
     w_artist = 1.0
-    w_concat = 1.5  # TBV
+    w_concat = 2  # TBV
     rtitle = __string_match(title, otitle)
     rartist = __string_match(performer, operformer)
     rconcat = __string_smart_diff(title + " " + performer, otitle + " " + operformer)
-    return (rtitle * w_title + rartist * w_artist + rconcat * w_concat) / (
-        w_artist + w_title + w_concat
+    return min(
+        (rtitle * w_title + rartist * w_artist + rconcat * w_concat)
+        / (w_artist + w_title + w_concat),
+        0.99,
     )
 
 
