@@ -220,12 +220,12 @@ def find_best_candidate(
     if candidates_list[0].score >= 0.9:
         # High confidence, resolved
         resolution = candidates_list[0]
-        status = "auto"
+        status = reason
     # Assert: 0.6 < Best core < 0.9
     if not resolution and candidates_list[0].score > 0.6 and len(candidates_list) < 2:
         # Good confidence, no other options, resolved
         resolution = candidates_list[0]
-        status = "auto"
+        status = reason
     if not resolution and len(candidates_list) == 1:
         # Low confidence, no other options, resolved
         resolution = candidates_list[0]
@@ -234,7 +234,7 @@ def find_best_candidate(
     if not resolution and (candidates_list[0].score - candidates_list[1].score) > 0.2:
         # Good confidence, clear margin over next option, resolved
         resolution = candidates_list[0]
-        status = "auto"
+        status = reason
     if not resolution:
         resolution = candidates_list[0]
         status = "pending"
