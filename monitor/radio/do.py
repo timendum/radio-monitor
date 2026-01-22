@@ -11,7 +11,7 @@ def main() -> None:
         try:
             module.main(acquisition_id)
         except httpx.ReadTimeout:
-            print(f"Radio {module.__package__} in timeout")
+            print(f"Radio {module.__name__} in timeout")
         except BaseException:
             import traceback
 
