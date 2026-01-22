@@ -175,15 +175,11 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
             for p in c.song.l_performers
         ),
     )
-    # clean previous candidates
-    conn.executemany(
-        "DELETE FROM match_candidate WHERE play_id = ?",
-        ((play_id,) for play_id in candidates.keys()),
-    )
+    # never delete old match_candidate entries
     # match_candidate by song title+performers
     conn.executemany(
         """
-    INSERT INTO match_candidate
+    INSERT OR IGNORE INTO match_candidate
         (play_id, song_id, candidate_score, method) VALUES
         (?,       (SELECT s.song_id from song s where song_title = ? AND song_performers = ?),
                            ?,               ?     )""",
@@ -197,7 +193,7 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
     # match_candidate by song id
     conn.executemany(
         """
-    INSERT INTO match_candidate
+    INSERT OR IGNORE INTO match_candidate
         (play_id, song_id, candidate_score, method) VALUES
         (?,       ?,       ?,               ?     )""",
         (
