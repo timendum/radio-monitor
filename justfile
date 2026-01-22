@@ -58,6 +58,9 @@ WITH cdata AS (
   SELECT '4_resolved', COUNT(*)
   FROM play_resolution
   WHERE status IN ('auto', 'human')
+  UNION
+  SELECT '8_songs', COUNT(*)
+  FROM song
 )
 SELECT * from cdata
 UNION
@@ -88,3 +91,6 @@ pycheck:
   uvx ruff format --check .
   uvx ruff check .
   uvx ty check .
+
+check:
+  @uv run --env-file .env python -m monitor.check_song
