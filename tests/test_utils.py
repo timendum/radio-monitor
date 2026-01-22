@@ -93,6 +93,21 @@ class UtilTestCase(unittest.TestCase):
             0.7,
             "Bonnie and Clyde - JAY-Z, Beyonce",
         )
+        self.assertLess(
+            utils.calc_score("Waterfall", "James Hype", "Waterfall", "TLC"),
+            0.6,
+            "Waterfall",
+        )
+        self.assertGreater(
+            utils.calc_score(
+                "Waterfalls (feat. Sam Harper & Bobby Harvey)",
+                "James Hype",
+                "Waterfall",
+                "James Hype, Sam Harper, Bobby Harvey",
+            ),
+            0.5,
+            "Waterfall",
+        )
 
 
 if __name__ == "__main__":

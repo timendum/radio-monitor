@@ -1,31 +1,13 @@
 """Test to check against duplicate title+performer from spotify"""
 
-import sqlite3
 import unittest
 from pathlib import Path
 
 import vcr
+from test_e2e_ok import basic_match_checks, empty_songs_checks
 from vcr.record_mode import RecordMode
 
 from monitor import db_init, smatcher, utils
-
-
-def sanity_check(self: unittest.TestCase, conn: sqlite3.Connection):
-    """Sanity check - empty tables"""
-    rows = conn.execute("SELECT artist_id FROM artist").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id, song_title FROM song").fetchall()
-    self.assertEqual(len(rows), 1)
-    self.assertEqual(rows[0][1], "TODO")
-    rows = conn.execute("SELECT song_id FROM song_artist").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id, title FROM song_alias").fetchall()
-    self.assertEqual(len(rows), 1)
-    self.assertEqual(rows[0][1], "TODO")
-    rows = conn.execute("SELECT song_id FROM match_candidate").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id FROM play_resolution").fetchall()
-    self.assertFalse(rows)
 
 
 class E2ETestCaseDuplicate(unittest.TestCase):
@@ -46,7 +28,7 @@ class E2ETestCaseDuplicate(unittest.TestCase):
     def test_1_vasco(self):
         """Perform a match against Spotify and verify db"""
         with utils.conn_db() as conn:
-            sanity_check(self, conn)
+            empty_songs_checks(self, conn)
             conn.execute(
                 """INSERT INTO play (
                 station_id,
@@ -76,31 +58,25 @@ class E2ETestCaseDuplicate(unittest.TestCase):
             p_rows = conn.execute("SELECT play_id, title_raw, performer_raw FROM play").fetchall()
             self.assertEqual(len(p_rows), 1)
             self.assertEqual(len(p_rows[0]), 3)
-            play_id, _, _ = p_rows[0]
+            play_id = p_rows[0][0]
+            self.assertIsInstance(play_id, int)
             my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
             with my_vcr.use_cassette(
                 "fixtures/e2e_dupe_vasco.yml", filter_headers=["Authorization"]
             ):  # type: ignore
                 smatcher.main()
+            basic_match_checks(self, conn)
             # artist
             rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
-            self.assertGreaterEqual(len(rows), 1)
-            # song
+            artists = {row[1] for row in rows}
+            self.assertEqual(len(rows), len(artists), "Duplicate artists found in artist table")
             rows = conn.execute(
-                "SELECT song_id, song_title FROM song WHERE song_title != 'TODO'"
+                "SELECT song_id, song_key, song_title, song_performers FROM song"
             ).fetchall()
-            self.assertGreaterEqual(len(rows), 2)
-            # song_artist
-            rows = conn.execute("SELECT artist_id FROM song_artist ").fetchall()
-            self.assertGreaterEqual(len(rows), 2)
-            # match_candidate
-            rows = conn.execute(
-                "SELECT song_id FROM match_candidate WHERE play_id=?", (play_id,)
-            ).fetchall()
-            rows = conn.execute(
-                "SELECT song_id, song_title FROM song WHERE song_id = ?", (rows[0][0],)
-            ).fetchall()
-            self.assertGreaterEqual(len(rows), 1)
+            song_keys = {row[1] for row in rows}
+            self.assertEqual(len(rows), len(song_keys), "Duplicate song keys found in song table")
+            songs = {(row[2] + row[3]).strip().lower() for row in rows}
+            self.assertEqual(len(rows), len(songs), "Duplicate songs found in song table")
 
     @classmethod
     def tearDownClass(cls):

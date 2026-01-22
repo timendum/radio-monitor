@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 import vcr
+from test_e2e_ok import basic_match_checks, empty_songs_checks, one_play_checks
 from vcr.record_mode import RecordMode
 
 from monitor import db_init, smatcher, utils
@@ -32,125 +33,67 @@ class E2ETestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_dj.yml"):  # type: ignore
             deejay.main(acquisition_id)
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "deejay")
-            self.assertEqual(row[1], "When I Come Around")
-            self.assertEqual(row[2], "GREEN DAY")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "deejay")
+            self.assertEqual(title, "When I Come Around")
+            self.assertEqual(performer, "GREEN DAY")
+            self.assertEqual(db_acquisition_id, acquisition_id)
 
-    def test_1_insert_song_db(self):
+    def test_2_insert_song_db(self):
         with utils.conn_db() as conn:
-            p_rows = conn.execute("SELECT play_id, title_raw, performer_raw FROM play").fetchall()
+            empty_songs_checks(self, conn)
+            p_rows = conn.execute("SELECT play_id FROM play").fetchall()
             self.assertEqual(len(p_rows), 1)
-            self.assertEqual(len(p_rows[0]), 3)
-            play_id, ptitle, pperformer = p_rows[0]
-            self.assertIsInstance(play_id, int)
-            self.assertIsInstance(ptitle, str)
-            self.assertIsInstance(pperformer, str)
+            self.assertEqual(len(p_rows[0]), 1)
             play_id = p_rows[0][0]
-            smatcher.save_candidates(
-                {
-                    play_id: [
-                        smatcher.CandidateBySong(
-                            smatcher.Song(
-                                "When I Come Around",
-                                "Green Day",
-                                ("Green Day",),
-                                "USRE19900154",
-                                1994,
-                                "US",
-                                178,
-                            ),
-                            1,
-                            "test",
-                        )
-                    ]
-                },
-                conn,
-            )
+            candidates = {
+                play_id: [
+                    smatcher.CandidateBySong(
+                        smatcher.Song(
+                            "When I Come Around",
+                            "Green Day",
+                            ("Green Day",),
+                            "USRE19900154",
+                            1994,
+                            "US",
+                            178,
+                        ),
+                        1,
+                        "test",
+                    )
+                ]
+            }
+            smatcher.save_candidates(candidates, conn)
+            smatcher.save_resolution(candidates, conn, "human")
+            conn.commit()
+            status = basic_match_checks(self, conn)
+            self.assertEqual(status, "human")
             conn.execute("DELETE FROM match_candidate").fetchone()
+            conn.execute("DELETE FROM play_resolution").fetchone()
             conn.commit()
             # artist
             rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
-            artist_ids = []
-            for row in rows:
-                artist_ids.append(row[0])
-                # TEST: Every artist is similar enough
-                self.assertGreaterEqual(utils.calc_score("title", row[1], "title", pperformer), 0.8)
-            # song 1
+            self.assertGreaterEqual(len(rows), 1, "Artist rows should persist")
+            # song
             rows = conn.execute("SELECT song_id, song_title, song_key FROM song").fetchall()
-            song_ids = []
-            for row in rows:
-                if row[1] != "TODO":
-                    song_ids.append(row[0])
-                    # TEST: Every song has a key
-                    self.assertGreaterEqual(len(row[2]), 1)
-                    # TEST: Every song title is similar enough
-                    self.assertGreaterEqual(
-                        utils.calc_score(row[1], "performer", ptitle, "performer"), 0.5
-                    )
-            # TEST: Every artist row has at least one song_artist row
-            for artist_id in artist_ids:
-                rows = conn.execute(
-                    "SELECT artist_id FROM song_artist WHERE artist_id = ?", (artist_id,)
-                ).fetchall()
-                self.assertGreaterEqual(len(rows), 1)
-            # TEST: Every song row has at least one song_artist row
-            for song_id in song_ids:
-                rows = conn.execute(
-                    "SELECT artist_id FROM song_artist WHERE song_id = ?", (song_id,)
-                ).fetchall()
-                self.assertGreaterEqual(len(rows), 1, f"song_artist.song_id {song_id}")
-            # TEST: Every song row has one song_artist row
-            for song_id in song_ids:
-                rows = conn.execute(
-                    "SELECT song_id FROM song_alias WHERE song_id = ?", (song_id,)
-                ).fetchall()
-                self.assertEqual(len(rows), 1)
+            self.assertGreaterEqual(len(rows), 1, "Song rows should persist")
+            # song_artist
+            rows = conn.execute("SELECT artist_id FROM song_artist").fetchall()
+            self.assertGreaterEqual(len(rows), 1, "song_artist rows should persist")
+            # song_alias
+            rows = conn.execute("SELECT song_id FROM song_alias").fetchall()
+            self.assertGreaterEqual(len(rows), 1, "song_alias rows should persist")
 
     def test_3_match(self):
         """Perform a match against Spotify and verify db"""
         with utils.conn_db() as conn:
-            # Play id from test_1a_dj
-            p_rows = conn.execute("SELECT play_id, title_raw, performer_raw FROM play").fetchall()
-            play_id, _, _ = p_rows[0]
             my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
             with my_vcr.use_cassette(
                 "fixtures/e2e_smatcher_no_call.yml", filter_headers=["Authorization"]
             ):  # type: ignore
                 smatcher.main()
-            # TEST: Every play row has at least one match_candidate row
-            rows = conn.execute(
-                "SELECT song_id FROM match_candidate WHERE play_id=?", (play_id,)
-            ).fetchall()
-            self.assertGreaterEqual(len(rows), 1)
-            for row in rows:
-                # TEST: Every match_candidate row its song row
-                mc_rows = conn.execute(
-                    "SELECT song_id, song_title FROM song WHERE song_id = ?", (row[0],)
-                ).fetchall()
-                self.assertEqual(len(mc_rows), 1)
-            # TEST: Every play row has one play_resolution row
-            rows = conn.execute(
-                "SELECT song_id FROM play_resolution WHERE play_id=?", (play_id,)
-            ).fetchall()
-            self.assertEqual(len(rows), 1)
-            # TEST: Every play_resolution row has its song row
-            pr_rows = conn.execute(
-                "SELECT song_id, song_title FROM song WHERE song_id = ?", (rows[0][0],)
-            ).fetchall()
-            self.assertEqual(len(pr_rows), 1)
+            status = basic_match_checks(self, conn)
+            self.assertEqual(status, "auto")
 
     @classmethod
     def tearDownClass(cls):

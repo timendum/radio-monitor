@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 
 import vcr
+from test_e2e_ok import one_play_checks
 from vcr.record_mode import RecordMode
 
 from monitor import db_init, utils
@@ -27,19 +28,23 @@ class RadiosTestCaseDJ(unittest.TestCase):
         # STATION table
         with utils.conn_db() as conn:
             rows = conn.execute("SELECT station_code, display_name, active FROM station").fetchall()
-            self.assertTrue(rows)
-            self.assertGreater(len(rows), 1)
-            self.assertEqual(len([r for r in rows if "deejay" in r[1].lower()]), 1)
+            self.assertTrue(rows, "Station table is empty")
+            self.assertGreater(len(rows), 1, "Station table should have more than one row")
+            self.assertEqual(
+                len([r for r in rows if "deejay" in r[1].lower()]), 1, "Deejay station not found"
+            )
             # COUNTRY table
             rows = conn.execute("SELECT country_code, name FROM country").fetchall()
-            self.assertTrue(rows)
-            self.assertGreater(len(rows), 1)
-            self.assertEqual(len([r for r in rows if "italy" == r[1].lower()]), 1)
+            self.assertTrue(rows, "Country table is empty")
+            self.assertGreater(len(rows), 1, "Country table should have more than one row")
+            self.assertEqual(
+                len([r for r in rows if "italy" == r[1].lower()]), 1, "Italy country not found"
+            )
             # TODO song
             rows = conn.execute("SELECT song_title, song_performers FROM song").fetchall()
-            self.assertTrue(rows)
-            self.assertEqual(len(rows), 1)
-            self.assertEqual(rows[0], ("TODO", "TODO"))
+            self.assertTrue(rows, "Song table is empty")
+            self.assertEqual(len(rows), 1, "Song table should have one row")
+            self.assertEqual(rows[0], ("TODO", "TODO"), "TODO song not found")
 
     def test_capital(self):
         """Insert a know song, the match in db"""
@@ -48,22 +53,11 @@ class RadiosTestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_capital.yml"):  # type: ignore
             capital.main(acquisition_id)
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "capital")
-            self.assertEqual(row[1], "Catching Bodies")
-            self.assertEqual(row[2], "SEKOU")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "capital")
+            self.assertEqual(title, "Catching Bodies")
+            self.assertEqual(performer, "SEKOU")
+            self.assertEqual(db_acquisition_id, acquisition_id)
             # Clean up
             conn.execute("DELETE FROM play")
             conn.commit()
@@ -75,22 +69,11 @@ class RadiosTestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_m2o.yml"):  # type: ignore
             m2o.main(acquisition_id)
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "m2o")
-            self.assertEqual(row[1], "The Fate of Ophelia")
-            self.assertEqual(row[2], "TAYLOR SWIFT")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "m2o")
+            self.assertEqual(title, "The Fate of Ophelia")
+            self.assertEqual(performer, "TAYLOR SWIFT")
+            self.assertEqual(db_acquisition_id, acquisition_id)
             # Clean up
             conn.execute("DELETE FROM play")
             conn.commit()
@@ -102,22 +85,11 @@ class RadiosTestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_r101.yml"):  # type: ignore
             r101.main(acquisition_id)
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "r101")
-            self.assertEqual(row[1], "SNAP")
-            self.assertEqual(row[2], "ROSA LINN")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "r101")
+            self.assertEqual(title, "SNAP")
+            self.assertEqual(performer, "ROSA LINN")
+            self.assertEqual(db_acquisition_id, acquisition_id)
             # Clean up
             conn.execute("DELETE FROM play")
             conn.commit()
@@ -129,22 +101,11 @@ class RadiosTestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_r105.yml"):  # type: ignore
             r105.main(acquisition_id)
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "r105")
-            self.assertEqual(row[1], "NO CAP (Radio Edit)")
-            self.assertEqual(row[2], "DISCLOSURE & ANDERSON .PAAK")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "r105")
+            self.assertEqual(title, "NO CAP (Radio Edit)")
+            self.assertEqual(performer, "DISCLOSURE & ANDERSON .PAAK")
+            self.assertEqual(db_acquisition_id, acquisition_id)
             # Clean up
             conn.execute("DELETE FROM play")
             conn.commit()
@@ -156,22 +117,11 @@ class RadiosTestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_rds.yml"):  # type: ignore
             rds.main(acquisition_id)
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "rds")
-            self.assertEqual(row[1], "Camera")
-            self.assertEqual(row[2], "Ed Sheeran")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "rds")
+            self.assertEqual(title, "Camera")
+            self.assertEqual(performer, "Ed Sheeran")
+            self.assertEqual(db_acquisition_id, acquisition_id)
             # Clean up
             conn.execute("DELETE FROM play")
             conn.commit()
@@ -183,22 +133,11 @@ class RadiosTestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_dj.yml"):  # type: ignore
             deejay.main(acquisition_id)
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "deejay")
-            self.assertEqual(row[1], "When I Come Around")
-            self.assertEqual(row[2], "GREEN DAY")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "deejay")
+            self.assertEqual(title, "When I Come Around")
+            self.assertEqual(performer, "GREEN DAY")
+            self.assertEqual(db_acquisition_id, acquisition_id)
             # Clean up
             conn.execute("DELETE FROM play")
             conn.commit()
@@ -210,22 +149,11 @@ class RadiosTestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_virgin.yml"):  # type: ignore
             virgin.main(acquisition_id)
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "virgin")
-            self.assertEqual(row[1], "BUCKLE")
-            self.assertEqual(row[2], "FLORENCE + THE MACHINE")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "virgin")
+            self.assertEqual(title, "BUCKLE")
+            self.assertEqual(performer, "FLORENCE + THE MACHINE")
+            self.assertEqual(db_acquisition_id, acquisition_id)
             # Clean up
             conn.execute("DELETE FROM play")
             conn.commit()

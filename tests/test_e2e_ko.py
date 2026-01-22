@@ -1,29 +1,11 @@
-import sqlite3
 import unittest
 from pathlib import Path
 
 import vcr
+from test_e2e_ok import basic_match_checks, empty_songs_checks, one_play_checks
 from vcr.record_mode import RecordMode
 
 from monitor import db_init, smatcher, utils
-
-
-def sanity_check(self: unittest.TestCase, conn: sqlite3.Connection):
-    """Sanity check - empty tables"""
-    rows = conn.execute("SELECT artist_id FROM artist").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id, song_title FROM song").fetchall()
-    self.assertEqual(len(rows), 1)
-    self.assertEqual(rows[0][1], "TODO")
-    rows = conn.execute("SELECT song_id FROM song_artist").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id, title FROM song_alias").fetchall()
-    self.assertEqual(len(rows), 1)
-    self.assertEqual(rows[0][1], "TODO")
-    rows = conn.execute("SELECT song_id FROM match_candidate").fetchall()
-    self.assertFalse(rows)
-    rows = conn.execute("SELECT song_id FROM play_resolution").fetchall()
-    self.assertFalse(rows)
 
 
 class E2ETestCaseKO(unittest.TestCase):
@@ -41,7 +23,7 @@ class E2ETestCaseKO(unittest.TestCase):
         utils.conn_db = test_conn_db
         db_init.main()
 
-    def test_1a_dj(self):
+    def test_1_dj(self):
         """Insert a fake song, the match in db"""
         acquisition_id = utils.generate_batch("e2e_ko")
         utils.insert_into_radio(
@@ -53,67 +35,28 @@ class E2ETestCaseKO(unittest.TestCase):
             "{}",
         )
         with utils.conn_db() as conn:
-            rows = conn.execute(
-                "SELECT station_id, title_raw, performer_raw, acquisition_id FROM play"
-            ).fetchall()
-            self.assertTrue(rows)
-            self.assertGreaterEqual(len(rows), 1)
-            row = rows[0]
-            # Check station id
-            s_rows = conn.execute(
-                "SELECT station_code, display_name, active FROM station WHERE station_id = ?",
-                (row[0],),
-            ).fetchone()
-            self.assertTrue(s_rows)
-            self.assertEqual(s_rows[1].lower(), "deejay")
-            self.assertEqual(row[1], "uth234jknsfu238y74h SDflkhjiou2y3")
-            self.assertEqual(row[2], "adfklsjniouy23ghoi")
-            self.assertEqual(row[3], acquisition_id)
+            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            self.assertEqual(station_name, "deejay")
+            self.assertEqual(title, "uth234jknsfu238y74h SDflkhjiou2y3")
+            self.assertEqual(performer, "adfklsjniouy23ghoi")
+            self.assertEqual(db_acquisition_id, acquisition_id)
 
-    def test_1b_match(self):
+    def test_2_match(self):
         """Perform a match against Spotify and verify db"""
         with utils.conn_db() as conn:
-            sanity_check(self, conn)
-            # Play id from test_1a_dj
-            p_rows = conn.execute("SELECT play_id, title_raw, performer_raw FROM play").fetchall()
-            self.assertEqual(len(p_rows), 1)
-            self.assertEqual(len(p_rows[0]), 3)
-            play_id, ptitle, pperformer = p_rows[0]
-            self.assertIsInstance(play_id, int)
-            self.assertIsInstance(ptitle, str)
-            self.assertIsInstance(pperformer, str)
+            empty_songs_checks(self, conn)
             my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
             with my_vcr.use_cassette("fixtures/e2e_2b_ko.yml", filter_headers=["Authorization"]):  # type: ignore
                 smatcher.main()
+            basic_match_checks(self, conn)
             # artist
             rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
-            self.assertGreaterEqual(len(rows), 0)  # no rows
+            self.assertGreaterEqual(len(rows), 0, "No artist rows should exists")
             # song
             rows = conn.execute("SELECT song_id, song_title FROM song").fetchall()
-            self.assertGreaterEqual(len(rows), 1)  # no new rows
+            self.assertGreaterEqual(len(rows), 1, "No song rows should exists")
             for row in rows:
-                self.assertGreaterEqual(row[1], "TODO")
-            # TEST: Every play row has at least one match_candidate row
-            rows = conn.execute(
-                "SELECT song_id FROM match_candidate WHERE play_id=?", (play_id,)
-            ).fetchall()
-            self.assertEqual(len(rows), 1)
-            for row in rows:
-                # TEST: Every match_candidate row its song row
-                mc_rows = conn.execute(
-                    "SELECT song_id, song_title FROM song WHERE song_id = ?", (row[0],)
-                ).fetchall()
-                self.assertEqual(len(mc_rows), 1)
-            # TEST: Every play row has one play_resolution row
-            rows = conn.execute(
-                "SELECT song_id FROM play_resolution WHERE play_id=?", (play_id,)
-            ).fetchall()
-            self.assertEqual(len(rows), 1)
-            # TEST: Every play_resolution row has its song row
-            pr_rows = conn.execute(
-                "SELECT song_id, song_title FROM song WHERE song_id = ?", (rows[0][0],)
-            ).fetchall()
-            self.assertEqual(len(pr_rows), 1)
+                self.assertGreaterEqual(row[1], "TODO", "No new song rows should exists")
 
     @classmethod
     def tearDownClass(cls):
