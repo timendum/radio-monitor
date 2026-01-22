@@ -15,8 +15,15 @@ DELETE FROM match_candidate WHERE play_id IN (
             ON pr.play_id = p.play_id
         WHERE
             EXISTS(SELECT candidate_id FROM match_candidate mc WHERE mc.play_id = p.play_id ) AND
-            pr.play_id IS NULL;
-)
+            pr.play_id IS NULL
+);
+
+-- Delete match_candidates without song
+DELETE FROM match_candidate as mc WHERE NOT EXISTS (
+    SELECT s.song_id
+    FROM song s
+    WHERE s.song_id = mc.song_id
+);
 
 -- Find latest resolutions with low score
 SELECT
@@ -39,19 +46,19 @@ LIMIT 20;
 
 -- Remove duplicated match_candidate
 WITH ranked AS (
-  SELECT
-    candidate_id,
-    play_id,
-    song_id,
-    ROW_NUMBER() OVER (
-      PARTITION BY play_id, song_id
-      ORDER BY candidate_score DESC, candidate_id ASC
-    ) AS rn
-  FROM match_candidate
+    SELECT
+        candidate_id,
+        play_id,
+        song_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY play_id, song_id
+            ORDER BY candidate_score DESC, candidate_id ASC
+        ) AS rn
+    FROM match_candidate
 )
 DELETE FROM match_candidate
 WHERE candidate_id IN (
-  SELECT candidate_id
-  FROM ranked
-  WHERE rn > 1
+    SELECT candidate_id
+    FROM ranked
+    WHERE rn > 1
 );

@@ -128,7 +128,7 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
     # SONG
     conn.executemany(
         """
-    INSERT OR REPLACE INTO song
+    INSERT OR IGNORE INTO song
         (song_title, song_performers, song_key, isrc, year, country, duration) VALUES
         (?,          ?,               ?,        ?,    ?,    ?,       ?     )""",
         (
