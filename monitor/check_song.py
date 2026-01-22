@@ -179,7 +179,7 @@ def main() -> None:
                 res = smatcher.save_resolution(candidates, conn)
                 conn.commit()
                 if res[play_id]:
-                    # go back and check if fixed
+                    # go back and should be solved
                     last_id -= 1
                     continue
             ncount = count_todo(last_id, conn)
@@ -201,10 +201,10 @@ def main() -> None:
             except ValueError:
                 pass
             match decision:
-                case "q":
-                    # Quit
+                case "q" | "quit":
+                    # Halt script
                     break
-                case "b":
+                case "b" | "!" | "best":
                     # Save best candidate
                     song_id = mc_song_ids[0]
                     smatcher.save_resolution(
@@ -212,7 +212,7 @@ def main() -> None:
                     )
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
-                case "r":
+                case "r" | "retry":
                     # Retry spotify search
                     releases = smatcher.spotify_find(title, performer, token)
                     if releases:
@@ -227,21 +227,17 @@ def main() -> None:
                         continue
                     print(" -> No spotify results")
                     continue
-                case "s":
+                case "s" | "spotify":
                     # Query Spotify with manual input for title+performer
                     r = query_spotify(play_id, token, conn)
                     if not r:
                         last_id -= 1
                     continue
-                case "e":
+                case "e" | "i" | "entry" | "insert":
                     # Manual insert song
                     ask_user(play_id, conn)
                     continue
-                case "i":
-                    # Manual insert song
-                    ask_user(play_id, conn)
-                    continue
-                case "g":
+                case "g" | "ignore":
                     # I*g*nore
                     candidates[play_id] = [smatcher.CAND_IGNORED]
                     smatcher.save_candidates(candidates, conn)
