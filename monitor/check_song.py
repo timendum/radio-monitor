@@ -115,12 +115,12 @@ def save_human_alias(r: Song, play_id: int, conn: sqlite3.Connection) -> None:
         """
         INSERT INTO song_alias
         (song_id, kind,  title, performers, source) VALUES
-        ((SELECT s.song_id FROM song s WHERE song_title = ? AND song_performers = ?),
+        ((SELECT s.song_id FROM song s WHERE song_key = ?),
                  'alias',
                         (SELECT pt.title_raw FROM play pt WHERE pt.play_id = ?),
                                 (SELECT pp.performer_raw FROM play pp WHERE pp.play_id = ?),
                                             'manual')""",
-        (r.title, r.s_performers, play_id, play_id),
+        (r.unique_key(), play_id, play_id),
     )
     conn.commit()
 
@@ -333,6 +333,7 @@ def main() -> None:
                     # Query Spotify with manual input for title+performer
                     r = query_spotify(play_id, token, conn)
                     if not r:
+                        print(" -> New results found")
                         last_id -= 1
                     continue
                 case "e" | "i" | "entry" | "insert":
@@ -343,7 +344,7 @@ def main() -> None:
                     # I*g*nore
                     candidates[play_id] = [smatcher.CAND_IGNORED]
                     smatcher.save_candidates(candidates, conn)
-                    smatcher.save_resolution(candidates, conn, "ignore")
+                    smatcher.save_resolution(candidates, conn, "human")
                     conn.commit()
                     print(" -> Ignored!")
                     continue
