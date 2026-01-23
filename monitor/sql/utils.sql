@@ -71,3 +71,6 @@ WHERE
         FROM song
         WHERE song.song_id = song_alias.song_id
     );
+
+-- fix todo song key
+UPDATE song SET song_key = 'todo|todo' WHERE song_title = 'TODO' AND song_performers = 'TODO';

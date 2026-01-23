@@ -167,11 +167,11 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
         """
     INSERT INTO song_artist
         (song_id, artist_id) VALUES
-        ((SELECT s.song_id FROM song s WHERE song_title = ? AND song_performers = ?),
+        ((SELECT s.song_id FROM song s WHERE song_key = ?),
                   (SELECT artist_id FROM artist WHERE artist_name = ?))
         ON CONFLICT DO NOTHING""",
         (
-            (c.song.title, c.song.s_performers, p)
+            (c.song.unique_key(), p)
             for cl in candidates.values()
             for c in cl
             if c != CAND_TODO and c != CAND_IGNORED and isinstance(c, CandidateBySong)
@@ -184,11 +184,11 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
         """
     INSERT INTO match_candidate
         (play_id, song_id, candidate_score, method) VALUES
-        (?,       (SELECT s.song_id from song s where song_title = ? AND song_performers = ?),
+        (?,       (SELECT s.song_id FROM song s WHERE song_key = ?),
                            ?,               ?     )
         ON CONFLICT DO NOTHING""",
         (
-            (play_id, c.song.title, c.song.s_performers, c.score, c.method)
+            (play_id, c.song.unique_key(), c.score, c.method)
             for play_id, cl in candidates.items()
             for c in cl
             if isinstance(c, CandidateBySong)
@@ -261,8 +261,8 @@ def save_resolution(
             cur = conn.execute(
                 """
             SELECT song_id FROM song
-            WHERE song_title = ? AND song_performers = ?""",
-                (resolution.song.title, resolution.song.s_performers),
+            WHERE song_key = ?""",
+                (resolution.song.unique_key(),),
             )
             row = cur.fetchone()
             if row:

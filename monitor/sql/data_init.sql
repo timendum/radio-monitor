@@ -66,4 +66,4 @@ INSERT OR IGNORE INTO country (country_code, name) VALUES
 ('IE', 'Ireland');
 
 INSERT OR IGNORE INTO song (song_title, song_performers, song_key) VALUES
-('TODO', 'TODO', 'TODO');
+('TODO', 'TODO', 'todo|todo');
