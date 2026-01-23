@@ -51,8 +51,7 @@ ORDER BY mc.candidate_score DESC
 
     print_ascii_table(
         [
-            ["v", "title", "artist", "year", "country"],
-            ["", title, performer, "", ""],
+            ["v", title, performer, "year", "country"],
         ]
         + [
             [
@@ -63,7 +62,8 @@ ORDER BY mc.candidate_score DESC
                 row[3],
             ]
             for i, row in enumerate(rows)
-        ]
+        ],
+        head=0
     )
     return [row[4] for row in rows]
 
@@ -143,16 +143,19 @@ def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
             ]
             + [
                 [
-                    str(i),
+                    str(i) + ("!" if i == 0 else ""),
                     r.title,
                     r.s_performers,
                     r.year or "",
                     r.country or "",
                 ]
                 for i, r in enumerate(releases)
-            ]
+            ],
+            head=0
         )
         decision = input("Action (id to save, skip): ").strip()
+        if decision == "!":
+            decision = "0"
         try:
             releases_id = int(decision)
             if releases_id < len(releases):

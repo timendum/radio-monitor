@@ -1,3 +1,4 @@
+import enum
 import re
 import sqlite3
 import unicodedata
@@ -145,7 +146,7 @@ def calc_score(otitle: str, operformer: str, title: str, performer: str) -> floa
     )
 
 
-def print_ascii_table(data: list[list[Any]]) -> None:
+def print_ascii_table(data: list[list[Any]], head=-1) -> None:
     """Prints a list of lists as an ASCII table."""
     # Determine the width of each column
     col_widths = [max(len(str(item)) for item in col) for col in zip(*data, strict=False)]
@@ -158,9 +159,11 @@ def print_ascii_table(data: list[list[Any]]) -> None:
 
     # Print the table
     print(margin, flush=False)
-    for row in data:
-        try:
+    try:
+        for i, row in enumerate(data):
             print(row_format.format(*row), flush=False)
-        except TypeError:
-            print_ascii_table([[str(cell) for cell in row] for row in data])
-    print(margin, flush=True)
+            if i == head:
+                print(margin, flush=True)
+        print(margin, flush=True)
+    except TypeError:
+        print_ascii_table([[str(cell) for cell in row] for row in data])
