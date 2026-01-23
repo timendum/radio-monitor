@@ -158,6 +158,43 @@ def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
     return True
 
 
+def edit_song(conn: sqlite3.Connection) -> None:
+    decision = input("Edit SONG - enter song id: ").strip().lower()
+    try:
+        song_id = int(decision)
+    except ValueError:
+        print("Edit terminated")
+        return
+    decision = input("Edit SONG - Year: ").strip().lower()
+    year = None
+    try:
+        year = int(decision)
+    except ValueError:
+        pass
+    decision = input("Edit SONG - Country: ").strip().lower()
+    country = None
+    try:
+        country = decision.upper() if (decision) == 2 else None
+    except ValueError:
+        pass
+    if year or country:
+        r = conn.execute(
+            """
+        UPDATE song
+        SET
+            year = COALESCE(?, year),
+            country = COALESCE(?, country)
+        WHERE song_id = ?
+        """,
+            (year, country, song_id),
+        )
+        print(r.lastrowid)
+        conn.commit()
+    else:
+        print("Edit terminated - no data")
+    return
+
+
 def main() -> None:
     with utils.conn_db() as conn:
         last_id = -1
@@ -201,6 +238,11 @@ def main() -> None:
             except ValueError:
                 pass
             match decision:
+                case "e" | "edit":
+                    # Edit song entry
+                    edit_song(conn)
+                    last_id -= 1
+                    continue
                 case "q" | "quit":
                     # Halt script
                     break
