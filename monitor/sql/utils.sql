@@ -62,3 +62,12 @@ WHERE candidate_id IN (
     FROM ranked
     WHERE rn > 1
 );
+
+-- delete invalid song_alias rows
+DELETE FROM song_alias
+WHERE
+    NOT EXISTS (
+        SELECT song.song_id
+        FROM song
+        WHERE song.song_id = song_alias.song_id
+    );
