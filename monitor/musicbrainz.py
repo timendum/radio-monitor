@@ -49,9 +49,8 @@ def find_releases(title: str, artist: str) -> list[SpSong]:
             )
     if not findings:
         return []
-    # findings = [r for r in findings if r.year == min_year]
-    findings = sorted(findings, key=lambda r: r.year / r.score)
-    return findings[:5]
+    findings = sorted(findings, key=lambda r: r.year / r.score)[:5]
+    return sorted(findings, key=lambda r: r.score, reverse=True)
 
 
 def main():
