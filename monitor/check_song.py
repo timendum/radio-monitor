@@ -158,13 +158,38 @@ def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
     return True
 
 
-def edit_song(conn: sqlite3.Connection) -> None:
+def edit_song(conn: sqlite3.Connection, default_song_id: int) -> None:
     decision = input("Edit SONG - enter song id: ").strip().lower()
     try:
         song_id = int(decision)
     except ValueError:
-        print("Edit terminated")
+        if decision == "!":
+            song_id = default_song_id
+        else:
+            print("Edit terminated")
+            return
+    r = conn.execute(
+        """
+    SELECT song_title, song_performers, year, country, isrc, duration
+    FROM song
+    WHERE song_id = ?
+    """,
+        (song_id,),
+    )
+    if not (row := r.fetchone()):
+        print("Edit terminated - song not found")
         return
+    print_ascii_table(
+        [
+            ["id", str(song_id)],
+            ["title", row[0]],
+            ["performers", row[1]],
+            ["year", str(row[2])],
+            ["country", row[3]],
+            ["isrc", str(row[4])],
+            ["duration (s)", row[5]],
+        ]
+    )
     decision = input("Edit SONG - Year: ").strip().lower()
     year = None
     try:
@@ -240,7 +265,7 @@ def main() -> None:
             match decision:
                 case "e" | "edit":
                     # Edit song entry
-                    edit_song(conn)
+                    edit_song(conn, mc_song_ids[0])
                     last_id -= 1
                     continue
                 case "q" | "quit":

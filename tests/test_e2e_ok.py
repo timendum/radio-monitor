@@ -193,7 +193,6 @@ class E2ETestCaseDJ(unittest.TestCase):
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "auto")
 
-
     @classmethod
     def tearDownClass(cls):
         utils.conn_db = cls.orig_db
