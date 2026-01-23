@@ -1,6 +1,7 @@
 import sqlite3
 
 from monitor import smatcher, utils
+from monitor.musicbrainz import find_releases as mb_find_releases
 from monitor.smatcher import CandidateByID, CandidateBySong, CandidateList, Song, db_find
 from monitor.utils import print_ascii_table
 
@@ -260,7 +261,7 @@ def main() -> None:
             print(f"ID: {play_id} (todo: {ncount})")
             mc_song_ids = print_match_candidates(play_id, title, performer, conn)
             decision = (
-                input("Action (Quit, Best, id to save, Retry, Spotify, iGnore, Insert, skip): ")
+                input("Quit, Best, id to save, Retry, Spotify, iGnore, Insert, Mbrainz, skip: ")
                 .strip()
                 .lower()
             )
@@ -305,6 +306,22 @@ def main() -> None:
                         print(" -> New results found")
                     else:
                         print(" -> No spotify results")
+                    last_id -= 1
+                    continue
+                case "m" | "mb" | "mbrainz" | "musicbrainz":
+                    # Try MusicBrainz search
+                    releases = mb_find_releases(title, performer)
+                    if releases:
+                        candidates[play_id] = [
+                            CandidateBySong(Song.from_spotify(ss), ss.score, "mbrainz")
+                            for ss in releases
+                        ]
+                        smatcher.save_candidates(candidates, conn)
+                        smatcher.save_resolution(candidates, conn)
+                        conn.commit()
+                        print(" -> New results found")
+                    else:
+                        print(" -> No musicbrainz results")
                     last_id -= 1
                     continue
                 case "s" | "spotify":
