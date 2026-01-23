@@ -34,7 +34,12 @@ def print_match_candidates(
 ) -> list[int]:
     rows = conn.execute(
         """
-SELECT s.song_title, s.song_performers, s.year, s.country, mc.song_id
+SELECT
+    s.song_title,
+    s.song_performers,
+    COALESCE(s.year, "") as year,
+    COALESCE(s.country, "") as country,
+    mc.song_id
 FROM match_candidate as mc
 JOIN song as s ON s.song_id = mc.song_id
 WHERE mc.play_id = ?
@@ -140,8 +145,8 @@ def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
                     str(i),
                     r.title,
                     r.s_performers,
-                    r.year,
-                    r.country,
+                    r.year or "",
+                    r.country or "",
                 ]
                 for i, r in enumerate(releases)
             ]
@@ -170,9 +175,16 @@ def edit_song(conn: sqlite3.Connection, default_song_id: int) -> None:
             return
     r = conn.execute(
         """
-    SELECT song_title, song_performers, year, country, isrc, duration
+    SELECT
+        song_title,
+        song_performers,
+        COALESCE(year, "")     AS year,
+        COALESCE(country, "")  AS country,
+        COALESCE(isrc, "")     AS isrc,
+        COALESCE(duration, "") AS duration
     FROM song
-    WHERE song_id = ?
+    WHERE
+        song_id = ?
     """,
         (song_id,),
     )
@@ -290,9 +302,10 @@ def main() -> None:
                         smatcher.save_candidates(candidates, conn)
                         smatcher.save_resolution(candidates, conn)
                         conn.commit()
-                        last_id -= 1
-                        continue
-                    print(" -> No spotify results")
+                        print(" -> New results found")
+                    else:
+                        print(" -> No spotify results")
+                    last_id -= 1
                     continue
                 case "s" | "spotify":
                     # Query Spotify with manual input for title+performer

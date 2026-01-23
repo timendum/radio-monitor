@@ -159,6 +159,8 @@ def print_ascii_table(data: list[list[Any]]) -> None:
     # Print the table
     print(margin, flush=False)
     for row in data:
-        crow = ["<None>" if item is None else item for item in row]
-        print(row_format.format(*crow), flush=False)
+        try:
+            print(row_format.format(*row), flush=False)
+        except TypeError:
+            print_ascii_table([[str(cell) for cell in row] for row in data])
     print(margin, flush=True)
