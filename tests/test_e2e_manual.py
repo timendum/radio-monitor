@@ -11,19 +11,19 @@ from monitor import check_song, db_init, smatcher, utils
 from monitor.radio import m2o
 
 
-class E2ETestCaseM2O(unittest.TestCase):
+class E2ETestCaseManual(unittest.TestCase):
     match_candidate_count = 0
 
     @classmethod
     def setUpClass(cls):
         cls.orig_db = utils.conn_db
         try:
-            Path("test_e2e_m2o.sqlite3").unlink()
+            Path("test_e2e_manual.sqlite3").unlink()
         except FileNotFoundError:
             pass
 
         def test_conn_db(path=""):
-            return cls.orig_db("test_e2e_m2o.sqlite3")
+            return cls.orig_db("test_e2e_manual.sqlite3")
 
         utils.conn_db = test_conn_db
         db_init.main()
@@ -68,22 +68,21 @@ class E2ETestCaseM2O(unittest.TestCase):
             one_play_checks(self, conn)
             p_rows = conn.execute("SELECT play_id FROM play").fetchall()
             play_id = p_rows[0][0]
-            my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-            with my_vcr.use_cassette(
-                "fixtures/e2e_m2o_spotify_2.yml", filter_headers=["Authorization"]
-            ):  # type: ignore
-                title, performer = check_song.find_play(play_id, conn)
-                # Force title change to match db entry
-                title = "Waterfalls"
-                song_match = smatcher.db_find(title, performer, conn)
-                self.assertGreaterEqual(
-                    len(song_match), 1, "At least one song should be matched from db"
-                )
-                candidates = [smatcher.CandidateByID(s[0], s[1], "db") for s in song_match]
-                smatcher.save_candidates({play_id: candidates}, conn)
-                smatcher.save_resolution({play_id: candidates}, conn)
+            check_song.save_human_alias(
+                smatcher.Song(
+                    "Manual Waterfalls",
+                    "Manual JAMES HYPE",
+                    ("Manual JAMES HYPE",),
+                    None,
+                    None,
+                    "",
+                    None,
+                ),
+                play_id,
+                conn,
+            )
             status = basic_match_checks(self, conn)
-            self.assertEqual(status, "pending", "Status should be pending")
+            self.assertEqual(status, "human", "Status should be human")
             # match_candidate count
             rows = conn.execute(
                 "SELECT song_id FROM match_candidate",
@@ -93,38 +92,14 @@ class E2ETestCaseM2O(unittest.TestCase):
                 self.match_candidate_count,
                 f"Candidates are now less - {self.match_candidate_count} vs {len(rows)}",
             )
-
-    def test_4_match(self):
-        """Perform again a match against Spotify, forced for a solution"""
-        with utils.conn_db() as conn:
-            one_play_checks(self, conn)
-            p_rows = conn.execute("SELECT play_id FROM play").fetchall()
-            play_id = p_rows[0][0]
-            my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
-            with my_vcr.use_cassette(
-                "fixtures/e2e_m2o_spotify_2.yml", filter_headers=["Authorization"]
-            ):  # type: ignore
-                title, performer = check_song.find_play(play_id, conn)
-                # Force title change to **ok** match db entry
-                title = "Waterfalls (feat. Sam Harper & Bobby Harvey)"
-                performer = "James Hype, Sam Harper, Bobby Harvey"
-                song_match = smatcher.db_find(title, performer, conn)
-                self.assertGreaterEqual(
-                    len(song_match), 1, "At least one song should be matched from db"
-                )
-                candidates = [smatcher.CandidateByID(s[0], s[1], "db") for s in song_match]
-                smatcher.save_candidates({play_id: candidates}, conn)
-                smatcher.save_resolution({play_id: candidates}, conn)
-            status = basic_match_checks(self, conn)
-            self.assertEqual(status, "auto", "Status should be auto")
-            # match_candidate count
+            # song_alias
             rows = conn.execute(
-                "SELECT song_id FROM match_candidate",
+                "SELECT song_id, kind FROM song_alias WHERE kind = 'alias'"
             ).fetchall()
-            self.assertGreaterEqual(
+            self.assertEqual(
                 len(rows),
-                self.match_candidate_count,
-                f"Candidates are now less - {self.match_candidate_count} vs {len(rows)}",
+                1,
+                f"A song alias should be created - found {len(rows)}",
             )
 
     @classmethod

@@ -108,10 +108,10 @@ def basic_match_checks(self: unittest.TestCase, conn: sqlite3.Connection) -> str
     # song_alias by song_id
     for song_id in song_ids:
         rows = conn.execute(
-            "SELECT song_id FROM song_alias WHERE song_id = ?", (song_id,)
+            "SELECT song_id, kind FROM song_alias WHERE song_id = ?", (song_id,)
         ).fetchall()
         self.assertEqual(
-            len(rows),
+            len([1 for r in rows if r[1] == "canonical"]),
             1,
             f"Every song should have one song_alias row: {song_id} has {len(rows)}",
         )
