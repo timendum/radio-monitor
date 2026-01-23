@@ -36,7 +36,7 @@ def print_match_candidates(
         """
 SELECT s.song_title, s.song_performers, s.year, s.country, mc.song_id
 FROM match_candidate as mc
-LEFT JOIN song as s ON s.song_id = mc.song_id
+JOIN song as s ON s.song_id = mc.song_id
 WHERE mc.play_id = ?
 ORDER BY mc.candidate_score DESC
 """,
