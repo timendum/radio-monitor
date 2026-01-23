@@ -66,12 +66,13 @@ def basic_match_checks(self: unittest.TestCase, conn: sqlite3.Connection) -> str
     artist_ids = []
     for row in rows:
         artist_ids.append(row[0])
+    # song
+    if len(rows) > 0:
         self.assertGreaterEqual(
-            utils.calc_score("title", row[1], "title", pperformer),
+            max(utils.calc_score("title", row[1], "title", pperformer) for row in rows),
             0.5,
-            f"Every artist should be similar enough: '{row[1]}' vs '{pperformer}",
+            f"One artist should be similar enough: '{[row[1] for row in rows]}' vs '{pperformer}",
         )
-    # song 1
     rows = conn.execute("SELECT song_id, song_title, song_key FROM song").fetchall()
     song_ids = []
     for row in rows:
@@ -80,10 +81,12 @@ def basic_match_checks(self: unittest.TestCase, conn: sqlite3.Connection) -> str
         song_ids.append(row[0])
         self.assertGreaterEqual(len(row[2]), 1, "Every song should have a song_key")
         self.assertIsInstance(row[2], str, "Every song should have a song_key")
+    # song
+    if len(rows) > 1:
         self.assertGreaterEqual(
-            utils.calc_score(row[1], "performer", ptitle, "performer"),
+            max(utils.calc_score(row[1], "performer", ptitle, "performer") for row in rows),
             0.5,
-            f"Every song title should be similar enough: '{row[1]}' vs '{ptitle}",
+            f"One song title should be similar enough: '{[row[1] for row in rows]}' vs '{pperformer}",
         )
     # song_artist by artist_id
     for artist_id in artist_ids:

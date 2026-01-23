@@ -51,12 +51,12 @@ class E2ETestCaseKO(unittest.TestCase):
             basic_match_checks(self, conn)
             # artist
             rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
-            self.assertGreaterEqual(len(rows), 0, "No artist rows should exists")
+            self.assertEqual(len(rows), 0, "No artist rows should exists")
             # song
             rows = conn.execute("SELECT song_id, song_title FROM song").fetchall()
-            self.assertGreaterEqual(len(rows), 1, "No song rows should exists")
+            self.assertEqual(len(rows), 1, "No song rows should exists")
             for row in rows:
-                self.assertGreaterEqual(row[1], "TODO", "No new song rows should exists")
+                self.assertEqual(row[1], "TODO", "No new song rows should exists")
 
     @classmethod
     def tearDownClass(cls):
