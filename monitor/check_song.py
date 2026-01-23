@@ -63,7 +63,7 @@ ORDER BY mc.candidate_score DESC
             ]
             for i, row in enumerate(rows)
         ],
-        head=0
+        head=0,
     )
     return [row[4] for row in rows]
 
@@ -100,7 +100,9 @@ def input_from_user(full=True) -> Song | None:
     country = input("Country (manual): ").strip().upper()
     if not country:
         return None
-    return Song(title, artist, tuple(a.strip() for a in artist.split(",")), None, year, country, 0)
+    return Song(
+        title, artist, tuple(a.strip() for a in artist.split(",")), None, year, country, None
+    )
 
 
 def save_human_alias(r: Song, play_id: int, conn: sqlite3.Connection) -> None:
@@ -151,7 +153,7 @@ def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
                 ]
                 for i, r in enumerate(releases)
             ],
-            head=0
+            head=0,
         )
         decision = input("Action (id to save, skip): ").strip()
         if decision == "!":

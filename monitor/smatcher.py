@@ -13,9 +13,9 @@ class Song(NamedTuple):
     s_performers: str
     l_performers: tuple[str, ...] | tuple[()]
     isrc: str | None
-    year: int
-    country: str
-    duration: int
+    year: int | None
+    country: str | None
+    duration: int | None
 
     @classmethod
     def from_spotify(cls, s: SpSong) -> "Song":
@@ -128,9 +128,10 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
     # SONG
     conn.executemany(
         """
-    INSERT OR IGNORE INTO song
+    INSERT INTO song
         (song_title, song_performers, song_key, isrc, year, country, duration) VALUES
-        (?,          ?,               ?,        ?,    ?,    ?,       ?     )""",
+        (?,          ?,               ?,        ?,    ?,    ?,       ?     )
+        ON CONFLICT DO NOTHING""",
         (
             (
                 c.song.title,
@@ -149,9 +150,10 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
     # artist
     conn.executemany(
         """
-    INSERT OR IGNORE INTO artist
+    INSERT INTO artist
         (artist_name) VALUES
-        (?)""",
+        (?)
+        ON CONFLICT DO NOTHING""",
         (
             (p,)
             for cl in candidates.values()
@@ -163,10 +165,11 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
     # song_artist
     conn.executemany(
         """
-    INSERT OR IGNORE INTO song_artist
+    INSERT INTO song_artist
         (song_id, artist_id) VALUES
         ((SELECT s.song_id FROM song s WHERE song_title = ? AND song_performers = ?),
-                  (SELECT artist_id FROM artist WHERE artist_name = ?))""",
+                  (SELECT artist_id FROM artist WHERE artist_name = ?))
+        ON CONFLICT DO NOTHING""",
         (
             (c.song.title, c.song.s_performers, p)
             for cl in candidates.values()
@@ -179,10 +182,11 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
     # match_candidate by song title+performers
     conn.executemany(
         """
-    INSERT OR IGNORE INTO match_candidate
+    INSERT INTO match_candidate
         (play_id, song_id, candidate_score, method) VALUES
         (?,       (SELECT s.song_id from song s where song_title = ? AND song_performers = ?),
-                           ?,               ?     )""",
+                           ?,               ?     )
+        ON CONFLICT DO NOTHING""",
         (
             (play_id, c.song.title, c.song.s_performers, c.score, c.method)
             for play_id, cl in candidates.items()
@@ -193,9 +197,10 @@ def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connecti
     # match_candidate by song id
     conn.executemany(
         """
-    INSERT OR IGNORE INTO match_candidate
+    INSERT INTO match_candidate
         (play_id, song_id, candidate_score, method) VALUES
-        (?,       ?,       ?,               ?     )""",
+        (?,       ?,       ?,               ?     )
+        ON CONFLICT DO NOTHING""",
         (
             (play_id, c.song_id, c.score, c.method)
             for play_id, cl in candidates.items()
@@ -299,10 +304,12 @@ def unique_candidates(candidates: dict[int, CandidateList]) -> dict[int, Candida
                     if candidate.score > seen_song[k].score:
                         seen_song[k] = candidate
                     # Or keep older
-                    elif candidate.song.year > 1:
+                    elif candidate.song.year is not None and candidate.song.year > 1:
+                        current = seen_song[k]
                         if (
-                            seen_song[k].song.year <= 1
-                            or seen_song[k].song.year > candidate.song.year
+                            current.song.year is None
+                            or current.song.year <= 1
+                            or current.song.year > candidate.song.year
                         ):
                             seen_song[k] = candidate
         if seen_id and seen_song:
