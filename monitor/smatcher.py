@@ -258,13 +258,12 @@ def save_resolution(
             song_id = resolution.song_id
         else:
             # Look up song_id
-            cur = conn.execute(
+            row = conn.execute(
                 """
             SELECT song_id FROM song
             WHERE song_key = ?""",
                 (resolution.song.unique_key(),),
-            )
-            row = cur.fetchone()
+            ).fetchone()
             if row:
                 song_id = row[0]
         if not song_id:
