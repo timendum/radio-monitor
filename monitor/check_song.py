@@ -348,7 +348,7 @@ def main() -> None:
             print(f"ID: {play_id} (todo: {ncount})")
             mc_song_ids = check_match_candidates(play_id, title, performer, conn)
             if not mc_song_ids:
-                return
+                continue
             decision = (
                 input("Quit, Best, id to save, Retry, Spotify, iGnore, Insert, Mbrainz, skip: ")
                 .strip()
