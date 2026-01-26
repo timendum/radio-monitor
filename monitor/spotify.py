@@ -75,8 +75,8 @@ def find_releases(title: str, performer: str, token: str) -> list[SpSong]:
     except KeyError:
         pass
     if findings:
-        findings = sorted(findings, key=lambda r: r.year / r.score)[:5]
-        return sorted(findings, key=lambda r: r.score, reverse=True)
+        limit = max(5, sum(1 for r in findings if r.score >= 0.5))
+        return sorted(findings, key=lambda r: r.score, reverse=True)[:limit]
     return []
 
 
