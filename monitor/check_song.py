@@ -268,6 +268,12 @@ def main() -> None:
             candidates: dict[int, CandidateList] = {}
             # check again on DB, maybe something new is there
             title, performer = find_play(play_id, conn)
+            if not title or not performer:
+                # Missing data, ignore
+                candidates[play_id] = [smatcher.CAND_IGNORED]
+                smatcher.save_candidates(candidates, conn)
+                smatcher.save_resolution(candidates, conn, "human")
+                conn.commit()
             song_match = db_find(title, performer, conn)
             if song_match:
                 # Found in DB!
