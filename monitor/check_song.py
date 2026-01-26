@@ -347,7 +347,9 @@ def main() -> None:
                     r = query_spotify(play_id, token, conn)
                     if not r:
                         print(" -> New results found")
-                        last_id -= 1
+                    else:
+                        print(" -> No results found")
+                    last_id -= 1
                     continue
                 case "e" | "i" | "entry" | "insert":
                     # Manual insert song
