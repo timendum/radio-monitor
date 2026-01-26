@@ -274,6 +274,7 @@ def main() -> None:
                 smatcher.save_candidates(candidates, conn)
                 smatcher.save_resolution(candidates, conn, "human")
                 conn.commit()
+                continue
             song_match = db_find(title, performer, conn)
             if song_match:
                 # Found in DB!
