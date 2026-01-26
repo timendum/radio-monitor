@@ -71,7 +71,7 @@ class E2ETestCaseManual(unittest.TestCase):
             s_rows = conn.execute("SELECT song_id FROM song ORDER BY song_id DESC").fetchall()
             self.assertGreaterEqual(len(s_rows), 2, "There should be at least two songs in db")
             song_id = s_rows[0][0]
-            check_song.save_human_solution(song_id, play_id, conn)
+            check_song.save_alias_solution(song_id, play_id, conn)
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "human", "Status should be human")
             # match_candidate count

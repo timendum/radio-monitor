@@ -94,3 +94,6 @@ pyfix:
 
 check:
   @uv run --env-file .env python -m monitor.check_song
+
+clean:
+  rm test_*.sqlite3

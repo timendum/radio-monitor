@@ -68,7 +68,7 @@ class E2ETestCaseManual(unittest.TestCase):
             one_play_checks(self, conn)
             p_rows = conn.execute("SELECT play_id FROM play").fetchall()
             play_id = p_rows[0][0]
-            check_song.save_human_solution(
+            check_song.save_alias_solution(
                 smatcher.Song(
                     "Manual Waterfalls",
                     "Manual JAMES HYPE",

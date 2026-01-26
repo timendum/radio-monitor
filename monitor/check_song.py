@@ -30,7 +30,7 @@ WHERE play_id = ?
     ).fetchone()
 
 
-def print_match_candidates(
+def check_match_candidates(
     play_id: int, title: str, performer: str, conn: sqlite3.Connection
 ) -> list[int]:
     rows = conn.execute(
@@ -38,8 +38,10 @@ def print_match_candidates(
 SELECT
     s.song_title,
     s.song_performers,
-    COALESCE(s.year, "") as year,
-    COALESCE(s.country, "") as country,
+    s.isrc,
+    s.year,
+    s.country,
+    s.duration,
     mc.song_id
 FROM match_candidate as mc
 JOIN song as s ON s.song_id = mc.song_id
@@ -49,23 +51,30 @@ ORDER BY mc.candidate_score DESC
         (play_id,),
     ).fetchall()
 
+    ssongs = solve_all_similar_candidates(play_id, title, performer, rows, conn)
+    if ssongs:
+        print(" -> Auto solved")
+        rows = ssongs
+
     print_ascii_table(
         [
             ["v", title, performer, "year", "country"],
         ]
         + [
             [
-                str(row[4]) + ("!" if i == 0 else ""),
+                str(row[6]) + ("!" if i == 0 else ""),
                 row[0],
                 row[1],
-                row[2],
-                row[3],
+                row[3] or "",
+                row[4] or "",
             ]
             for i, row in enumerate(rows)
         ],
         head=0,
     )
-    return [row[4] for row in rows]
+    if ssongs:
+        return []
+    return [row[6] for row in rows]
 
 
 def count_todo(last_id: int, conn: sqlite3.Connection) -> int:
@@ -77,6 +86,52 @@ def count_todo(last_id: int, conn: sqlite3.Connection) -> int:
                 AND play_id > ?""",
         (last_id,),
     ).fetchone()[0]
+
+
+def solve_all_similar_candidates(
+    play_id: int,
+    title: str,
+    performer: str,
+    rows: list[tuple],
+    conn: sqlite3.Connection,
+) -> list[tuple]:
+    titles = set[str]()
+    performers = set[str]()
+    oldest = (None, 0)
+    for row in rows:
+        # s.song_title,
+        # s.song_performers,
+        # s.isrc,
+        # s.year,
+        # s.country,
+        # s.duration,
+        # mc.song_id
+        titles.add(utils.clear_title(row[0]))
+        performers.add(utils.clear_artist(row[1]))
+        nyear: int | None = row[3]
+        if nyear and (oldest[0] is None or nyear < oldest[0]):
+            oldest = (nyear, row[6])
+    if len(titles) == 1 and len(performers) == 1 and oldest[0] is not None:
+        # one unique song and performer
+        new_title = titles.pop()
+        new_performer = performers.pop()
+        if (
+            utils.calc_score(
+                utils.clear_title(title),
+                utils.clear_artist(performer),
+                new_title,
+                new_performer,
+            )
+            > 0.8
+        ):
+            # good match, solve song
+            save_alias_solution(oldest[1], play_id, conn)
+            songs = [row for row in rows if row[6] == oldest[1]] + [
+                row for row in rows if row[6] != oldest[1]
+            ]
+            songs[0]
+            return songs
+    return []
 
 
 def input_from_user(full=True) -> Song | None:
@@ -105,17 +160,19 @@ def input_from_user(full=True) -> Song | None:
     )
 
 
-def save_human_solution(s: Song | int, play_id: int, conn: sqlite3.Connection) -> None:
+def save_alias_solution(
+    s: Song | int, play_id: int, conn: sqlite3.Connection, method="human"
+) -> None:
     if isinstance(s, int):
-        c = CandidateByID(s, 1, "human")
+        c = CandidateByID(s, 1, method)
         cl: list[CandidateByID] = [c]
     else:
-        c = CandidateBySong(s, 1, "human")
+        c = CandidateBySong(s, 1, method)
         cl: list[CandidateBySong] = [c]
     candidates: dict[int, CandidateList] = {}
     candidates[play_id] = cl
     smatcher.save_candidates(candidates, conn)
-    smatcher.save_resolution(candidates, conn, "human")
+    smatcher.save_resolution(candidates, conn, method)
     if isinstance(s, int):
         conn.execute(
             """
@@ -146,7 +203,7 @@ def ask_user(play_id: int, conn: sqlite3.Connection) -> bool:
     r = input_from_user(True)
     if not r:
         return False
-    save_human_solution(r, play_id, conn)
+    save_alias_solution(r, play_id, conn)
     return True
 
 
@@ -178,7 +235,7 @@ def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
         try:
             releases_id = int(decision)
             if releases_id < len(releases):
-                save_human_solution(Song.from_spotify(releases[releases_id]), play_id, conn)
+                save_alias_solution(Song.from_spotify(releases[releases_id]), play_id, conn)
                 print(f" -> Saved {releases_id} for play {play_id}")
                 return True
         except ValueError:
@@ -278,7 +335,8 @@ def main() -> None:
             song_match = db_find(title, performer, conn)
             if song_match:
                 # Found in DB!
-                candidates[play_id] = [CandidateByID(s[0], s[1], "db") for s in song_match]
+                cl: list[CandidateByID] = [CandidateByID(s[0], s[1], "db") for s in song_match]
+                candidates[play_id] = cl
                 smatcher.save_candidates(candidates, conn)
                 res = smatcher.save_resolution(candidates, conn)
                 conn.commit()
@@ -288,7 +346,9 @@ def main() -> None:
                     continue
             ncount = count_todo(last_id, conn)
             print(f"ID: {play_id} (todo: {ncount})")
-            mc_song_ids = print_match_candidates(play_id, title, performer, conn)
+            mc_song_ids = check_match_candidates(play_id, title, performer, conn)
+            if not mc_song_ids:
+                return
             decision = (
                 input("Quit, Best, id to save, Retry, Spotify, iGnore, Insert, Mbrainz, skip: ")
                 .strip()
@@ -297,7 +357,7 @@ def main() -> None:
             try:
                 song_id = int(decision)
                 if song_id in mc_song_ids:
-                    save_human_solution(song_id, play_id, conn)
+                    save_alias_solution(song_id, play_id, conn)
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
             except ValueError:
@@ -314,7 +374,7 @@ def main() -> None:
                 case "b" | "!" | "best":
                     # Save best candidate
                     song_id = mc_song_ids[0]
-                    save_human_solution(song_id, play_id, conn)
+                    save_alias_solution(song_id, play_id, conn)
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
                 case "r" | "retry":
