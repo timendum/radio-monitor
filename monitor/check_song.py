@@ -105,23 +105,40 @@ def input_from_user(full=True) -> Song | None:
     )
 
 
-def save_human_alias(r: Song, play_id: int, conn: sqlite3.Connection) -> None:
-    c = CandidateBySong(r, 1, "human")
+def save_human_solution(s: Song | int, play_id: int, conn: sqlite3.Connection) -> None:
+    if isinstance(s, int):
+        c = CandidateByID(s, 1, "human")
+        cl: list[CandidateByID] = [c]
+    else:
+        c = CandidateBySong(s, 1, "human")
+        cl: list[CandidateBySong] = [c]
     candidates: dict[int, CandidateList] = {}
-    candidates[play_id] = [c]
+    candidates[play_id] = cl
     smatcher.save_candidates(candidates, conn)
     smatcher.save_resolution(candidates, conn, "human")
-    conn.execute(
-        """
-        INSERT INTO song_alias
-        (song_id, kind,  title, performers, source) VALUES
-        ((SELECT s.song_id FROM song s WHERE song_key = ?),
-                 'alias',
-                        (SELECT pt.title_raw FROM play pt WHERE pt.play_id = ?),
-                                (SELECT pp.performer_raw FROM play pp WHERE pp.play_id = ?),
-                                            'manual')""",
-        (r.unique_key(), play_id, play_id),
-    )
+    if isinstance(s, int):
+        conn.execute(
+            """
+            INSERT INTO song_alias
+            (song_id, kind,  title, performers, source) VALUES
+            (?,       'alias',
+                            (SELECT pt.title_raw FROM play pt WHERE pt.play_id = ?),
+                                    (SELECT pp.performer_raw FROM play pp WHERE pp.play_id = ?),
+                                                'manual')""",
+            (s, play_id, play_id),
+        )
+    else:
+        conn.execute(
+            """
+            INSERT INTO song_alias
+            (song_id, kind,  title, performers, source) VALUES
+            ((SELECT s.song_id FROM song s WHERE song_key = ?),
+                    'alias',
+                            (SELECT pt.title_raw FROM play pt WHERE pt.play_id = ?),
+                                    (SELECT pp.performer_raw FROM play pp WHERE pp.play_id = ?),
+                                                'manual')""",
+            (s.unique_key(), play_id, play_id),
+        )
     conn.commit()
 
 
@@ -129,7 +146,7 @@ def ask_user(play_id: int, conn: sqlite3.Connection) -> bool:
     r = input_from_user(True)
     if not r:
         return False
-    save_human_alias(r, play_id, conn)
+    save_human_solution(r, play_id, conn)
     return True
 
 
@@ -161,7 +178,7 @@ def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
         try:
             releases_id = int(decision)
             if releases_id < len(releases):
-                save_human_alias(Song.from_spotify(releases[releases_id]), play_id, conn)
+                save_human_solution(Song.from_spotify(releases[releases_id]), play_id, conn)
                 print(f" -> Saved {releases_id} for play {play_id}")
                 return True
         except ValueError:
@@ -273,9 +290,7 @@ def main() -> None:
             try:
                 song_id = int(decision)
                 if song_id in mc_song_ids:
-                    smatcher.save_resolution(
-                        {play_id: [CandidateByID(song_id, 1, "human")]}, conn, "human"
-                    )
+                    save_human_solution(song_id, play_id, conn)
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
             except ValueError:

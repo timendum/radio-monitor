@@ -1,4 +1,4 @@
-"""Test to check radio+spotify but pending, two checks"""
+"""Test to check radio+spotify and manual confirmation"""
 
 import unittest
 from pathlib import Path
@@ -18,12 +18,12 @@ class E2ETestCaseManual(unittest.TestCase):
     def setUpClass(cls):
         cls.orig_db = utils.conn_db
         try:
-            Path("test_e2e_manual.sqlite3").unlink()
+            Path("test_e2e_solution.sqlite3").unlink()
         except FileNotFoundError:
             pass
 
         def test_conn_db(path=""):
-            return cls.orig_db("test_e2e_manual.sqlite3")
+            return cls.orig_db("test_e2e_solution.sqlite3")
 
         utils.conn_db = test_conn_db
         db_init.main()
@@ -68,19 +68,10 @@ class E2ETestCaseManual(unittest.TestCase):
             one_play_checks(self, conn)
             p_rows = conn.execute("SELECT play_id FROM play").fetchall()
             play_id = p_rows[0][0]
-            check_song.save_human_solution(
-                smatcher.Song(
-                    "Manual Waterfalls",
-                    "Manual JAMES HYPE",
-                    ("Manual JAMES HYPE",),
-                    None,
-                    None,
-                    "",
-                    None,
-                ),
-                play_id,
-                conn,
-            )
+            s_rows = conn.execute("SELECT song_id FROM song ORDER BY song_id DESC").fetchall()
+            self.assertGreaterEqual(len(s_rows), 2, "There should be at least two songs in db")
+            song_id = s_rows[0][0]
+            check_song.save_human_solution(song_id, play_id, conn)
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "human", "Status should be human")
             # match_candidate count

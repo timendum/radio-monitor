@@ -86,7 +86,7 @@ def basic_match_checks(self: unittest.TestCase, conn: sqlite3.Connection) -> str
         self.assertGreaterEqual(
             max(utils.calc_score(row[1], "performer", ptitle, "performer") for row in rows),
             0.5,
-            f"One song title should be similar enough: '{[row[1] for row in rows]}' vs '{pperformer}",
+            f"One song title should be similar: '{[row[1] for row in rows]}' vs '{pperformer}",
         )
     # song_artist by artist_id
     for artist_id in artist_ids:

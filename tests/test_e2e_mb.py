@@ -52,16 +52,17 @@ class E2ETestCaseMB(unittest.TestCase):
             with my_vcr.use_cassette("fixtures/e2e_virgin_musicbrainz.yml"):  # type: ignore
                 releases = mb_find_releases(title, performer)
             self.assertTrue(releases, "MusicBrainz should return some releases")
-            candidates = {play_id: [
-                smatcher.CandidateBySong(smatcher.Song.from_spotify(ss), ss.score, "mbrainz")
-                for ss in releases
-            ]}
+            candidates = {
+                play_id: [
+                    smatcher.CandidateBySong(smatcher.Song.from_spotify(ss), ss.score, "mbrainz")
+                    for ss in releases
+                ]
+            }
             smatcher.save_candidates(candidates, conn)
             res = smatcher.save_resolution(candidates, conn)
             self.assertIsNotNone(res, "A resolution should be present")
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "auto")
-
 
     @classmethod
     def tearDownClass(cls):
