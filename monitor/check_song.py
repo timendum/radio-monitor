@@ -217,7 +217,7 @@ def edit_song(conn: sqlite3.Connection, default_song_id: int) -> None:
     decision = input("Edit SONG - Country: ").strip().lower()
     country = None
     try:
-        country = decision.upper() if (decision) == 2 else None
+        country = decision.upper() if len(decision) == 2 else None
     except ValueError:
         pass
     if year or country:
