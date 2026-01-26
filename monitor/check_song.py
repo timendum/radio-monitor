@@ -307,9 +307,7 @@ def main() -> None:
                 case "b" | "!" | "best":
                     # Save best candidate
                     song_id = mc_song_ids[0]
-                    smatcher.save_resolution(
-                        {play_id: [CandidateByID(song_id, 1, "human")]}, conn, "human"
-                    )
+                    save_human_solution(song_id, play_id, conn)
                     print(f" -> Saved {song_id} for play {play_id}")
                     continue
                 case "r" | "retry":
