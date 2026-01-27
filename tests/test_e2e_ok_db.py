@@ -33,7 +33,7 @@ class E2ETestCaseDJ(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_dj.yml"):  # type: ignore
             deejay.main(acquisition_id)
         with utils.conn_db() as conn:
-            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
             self.assertEqual(station_name, "deejay")
             self.assertEqual(title, "When I Come Around")
             self.assertEqual(performer, "GREEN DAY")
@@ -42,10 +42,7 @@ class E2ETestCaseDJ(unittest.TestCase):
     def test_2_insert_song_db(self):
         with utils.conn_db() as conn:
             empty_songs_checks(self, conn)
-            p_rows = conn.execute("SELECT play_id FROM play").fetchall()
-            self.assertEqual(len(p_rows), 1)
-            self.assertEqual(len(p_rows[0]), 1)
-            play_id = p_rows[0][0]
+            _, _, _, _, play_id = one_play_checks(self, conn)
             candidates = {
                 play_id: [
                     smatcher.CandidateBySong(
@@ -65,23 +62,23 @@ class E2ETestCaseDJ(unittest.TestCase):
             }
             smatcher.save_candidates(candidates, conn)
             smatcher.save_resolution(candidates, conn, "human")
-            conn.commit()
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "human")
-            conn.execute("DELETE FROM match_candidate").fetchone()
-            conn.execute("DELETE FROM play_resolution").fetchone()
-            conn.commit()
+            conn.exec("DELETE FROM match_candidate")
+            conn.exec("DELETE FROM play_resolution")
             # artist
-            rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
+            rows = conn.fetch_many(tuple[int, str], "SELECT artist_id, artist_name FROM artist")
             self.assertGreaterEqual(len(rows), 1, "Artist rows should persist")
             # song
-            rows = conn.execute("SELECT song_id, song_title, song_key FROM song").fetchall()
+            rows = conn.fetch_many(
+                tuple[int, str, str], "SELECT song_id, song_title, song_key FROM song"
+            )
             self.assertGreaterEqual(len(rows), 1, "Song rows should persist")
             # song_artist
-            rows = conn.execute("SELECT artist_id FROM song_artist").fetchall()
+            rows = conn.fetch_many(int, "SELECT artist_id FROM song_artist")
             self.assertGreaterEqual(len(rows), 1, "song_artist rows should persist")
             # song_alias
-            rows = conn.execute("SELECT song_id FROM song_alias").fetchall()
+            rows = conn.fetch_many(int, "SELECT song_id FROM song_alias")
             self.assertGreaterEqual(len(rows), 1, "song_alias rows should persist")
 
     def test_3_match(self):

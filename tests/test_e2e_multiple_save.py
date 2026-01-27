@@ -4,11 +4,42 @@ import unittest
 from pathlib import Path
 
 import vcr
+from onlymaps import Database
 from test_e2e_ok import basic_match_checks, empty_songs_checks, one_play_checks
 from vcr.record_mode import RecordMode
 
 from monitor import check_song, db_init, smatcher, utils
 from monitor.radio import m2o
+
+
+def candidate_eqgr(self: unittest.TestCase, conn: Database, previous_len: int) -> int:
+    rows = conn.fetch_many(
+        int,
+        "SELECT song_id FROM match_candidate",
+    )
+    self.assertGreaterEqual(
+        len(rows),
+        previous_len,
+        f"Candidates are now less - {previous_len} vs {len(rows)}",
+    )
+    return len(rows)
+
+
+def check_one_tocheck(self: unittest.TestCase, conn: Database):
+    row = check_song.find_play_tocheck(-1, conn)
+    self.assertIsNotNone(row, "find_play_tocheck should return a row")
+    if row:
+        play = check_song.find_play(row[0], conn)
+        self.assertIsNotNone(play, "find_play_tocheck -> find_play should work")
+        todo = check_song.count_todo(-1, conn)
+        self.assertEqual(todo, 1, "count_todo should return 1")
+        row = check_song.find_play_tocheck(row[0], conn)
+        self.assertIsNone(row, "find_play_tocheck should return only once")
+
+
+def check_zero_tocheck(self: unittest.TestCase, conn: Database):
+    row = check_song.find_play_tocheck(-1, conn)
+    self.assertIsNone(row, "find_play_tocheck should return nothing")
 
 
 class E2ETestCaseM2O(unittest.TestCase):
@@ -35,7 +66,7 @@ class E2ETestCaseM2O(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_pending_m2o.yml"):  # type: ignore
             m2o.main(acquisition_id)
         with utils.conn_db() as conn:
-            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
             self.assertEqual(station_name, "m2o")
             self.assertEqual(title, "Waterfalls (Not Existing Remix)")
             self.assertEqual(performer, "JAMES HYPE")
@@ -53,21 +84,13 @@ class E2ETestCaseM2O(unittest.TestCase):
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "pending", "Status should be pending")
             # match_candidate count
-            rows = conn.execute(
-                "SELECT song_id FROM match_candidate",
-            ).fetchall()
-            self.assertGreaterEqual(
-                len(rows),
-                self.match_candidate_count,
-                f"Candidates are now less - {self.match_candidate_count} vs {len(rows)}",
-            )
+            self.match_candidate_count = candidate_eqgr(self, conn, self.match_candidate_count)
+            check_one_tocheck(self, conn)
 
     def test_3_match(self):
         """Perform again a match against Spotify and verify db"""
         with utils.conn_db() as conn:
-            one_play_checks(self, conn)
-            p_rows = conn.execute("SELECT play_id FROM play").fetchall()
-            play_id = p_rows[0][0]
+            _, _, _, _, play_id = one_play_checks(self, conn)
             my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
             with my_vcr.use_cassette(
                 "fixtures/e2e_m2o_spotify_2.yml", filter_headers=["Authorization"]
@@ -85,21 +108,13 @@ class E2ETestCaseM2O(unittest.TestCase):
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "pending", "Status should be pending")
             # match_candidate count
-            rows = conn.execute(
-                "SELECT song_id FROM match_candidate",
-            ).fetchall()
-            self.assertGreaterEqual(
-                len(rows),
-                self.match_candidate_count,
-                f"Candidates are now less - {self.match_candidate_count} vs {len(rows)}",
-            )
+            self.match_candidate_count = candidate_eqgr(self, conn, self.match_candidate_count)
+            check_one_tocheck(self, conn)
 
     def test_4_match(self):
         """Perform again a match against Spotify, forced for a solution"""
         with utils.conn_db() as conn:
-            one_play_checks(self, conn)
-            p_rows = conn.execute("SELECT play_id FROM play").fetchall()
-            play_id = p_rows[0][0]
+            _, _, _, _, play_id = one_play_checks(self, conn)
             my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
             with my_vcr.use_cassette(
                 "fixtures/e2e_m2o_spotify_2.yml", filter_headers=["Authorization"]
@@ -118,14 +133,8 @@ class E2ETestCaseM2O(unittest.TestCase):
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "auto", "Status should be auto")
             # match_candidate count
-            rows = conn.execute(
-                "SELECT song_id FROM match_candidate",
-            ).fetchall()
-            self.assertGreaterEqual(
-                len(rows),
-                self.match_candidate_count,
-                f"Candidates are now less - {self.match_candidate_count} vs {len(rows)}",
-            )
+            self.match_candidate_count = candidate_eqgr(self, conn, self.match_candidate_count)
+            check_zero_tocheck(self, conn)
 
     @classmethod
     def tearDownClass(cls):

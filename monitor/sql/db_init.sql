@@ -1,7 +1,9 @@
 -- SQLite setup
 
 PRAGMA journal_mode = WAL;          -- better concurrency
+
 PRAGMA synchronous = NORMAL;        -- durability/speed tradeoff
+
 PRAGMA foreign_keys = ON;           -- enforce FK constraints
 
 
@@ -52,7 +54,6 @@ CREATE TABLE song (
   year             INTEGER,                  -- enrichment (year of release/origin)
   country          TEXT,                     -- check country.country_code
   duration         INTEGER,                  -- optional if known
-
   -- Prevent duplicate, light check
   UNIQUE (song_title, song_performers),
   -- Light sanity checks
@@ -61,6 +62,7 @@ CREATE TABLE song (
 );
 
 CREATE INDEX idx_song_title ON song(song_title);
+
 CREATE INDEX idx_song_song_performers ON song(song_performers);
 
 -- Many-to-many for featured artists/remixers/etc.
@@ -97,7 +99,6 @@ CREATE VIRTUAL TABLE IF NOT EXISTS song_fts USING fts5(
 );
 
 -- Keep FTS in sync
-
 -- On canonical insert: create a 'canonical' alias and mirror to FTS
 CREATE TRIGGER IF NOT EXISTS trg_song_ai_alias
 AFTER INSERT ON song
@@ -105,7 +106,6 @@ FOR EACH ROW
 BEGIN
   INSERT INTO song_alias (song_id, kind, title, performers)
   VALUES (NEW.song_id, 'canonical', NEW.song_title, NEW.song_performers);
-
   INSERT INTO song_fts(rowid, title, performers)
   VALUES (last_insert_rowid(), NEW.song_title, NEW.song_performers);
 END;
@@ -119,7 +119,6 @@ BEGIN
   SET title = NEW.song_title,
       performers = NEW.song_performers
   WHERE song_id = NEW.song_id AND kind = 'canonical';
-
   DELETE FROM song_fts
   WHERE rowid IN (
     SELECT song_alias_id FROM song_alias
@@ -141,7 +140,6 @@ BEGIN
     SELECT song_alias_id FROM song_alias
     WHERE song_id = OLD.song_id
   );
-
   DELETE FROM song_alias
   WHERE song_id = OLD.song_id;
 END;
@@ -188,7 +186,9 @@ CREATE TABLE match_candidate (
 );
 
 CREATE UNIQUE INDEX ux_candidate_play_song ON match_candidate(play_id, song_id);
+
 CREATE INDEX idx_candidate_play ON match_candidate(play_id);
+
 CREATE INDEX idx_candidate_song ON match_candidate(song_id);
 
 
@@ -203,4 +203,5 @@ CREATE TABLE play_resolution (
 );
 
 CREATE INDEX idx_resolution_song ON play_resolution(song_id);
+
 CREATE INDEX idx_resolution_status ON play_resolution(status);

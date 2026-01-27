@@ -4,7 +4,9 @@ import unittest
 from pathlib import Path
 
 import vcr
+from test_e2e_multiple_save import candidate_eqgr, check_one_tocheck, check_zero_tocheck
 from test_e2e_ok import basic_match_checks, empty_songs_checks, one_play_checks
+from test_e2e_solution import check_alias_created
 from vcr.record_mode import RecordMode
 
 from monitor import check_song, db_init, smatcher, utils
@@ -35,7 +37,7 @@ class E2ETestCaseManual(unittest.TestCase):
         with my_vcr.use_cassette("fixtures/e2e_pending_m2o.yml"):  # type: ignore
             m2o.main(acquisition_id)
         with utils.conn_db() as conn:
-            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
             self.assertEqual(station_name, "m2o")
             self.assertEqual(title, "Waterfalls (Not Existing Remix)")
             self.assertEqual(performer, "JAMES HYPE")
@@ -45,6 +47,7 @@ class E2ETestCaseManual(unittest.TestCase):
         """Perform a match against Spotify and verify db"""
         with utils.conn_db() as conn:
             empty_songs_checks(self, conn)
+            one_play_checks(self, conn)
             my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
             with my_vcr.use_cassette(
                 "fixtures/e2e_m2o_spotify.yml", filter_headers=["Authorization"]
@@ -53,21 +56,13 @@ class E2ETestCaseManual(unittest.TestCase):
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "pending", "Status should be pending")
             # match_candidate count
-            rows = conn.execute(
-                "SELECT song_id FROM match_candidate",
-            ).fetchall()
-            self.assertGreaterEqual(
-                len(rows),
-                self.match_candidate_count,
-                f"Candidates are now less - {self.match_candidate_count} vs {len(rows)}",
-            )
+            self.match_candidate_count = candidate_eqgr(self, conn, self.match_candidate_count)
+            check_one_tocheck(self, conn)
 
     def test_3_match(self):
         """Perform again a match against Spotify and verify db"""
         with utils.conn_db() as conn:
-            one_play_checks(self, conn)
-            p_rows = conn.execute("SELECT play_id FROM play").fetchall()
-            play_id = p_rows[0][0]
+            _, _, _, _, play_id = one_play_checks(self, conn)
             check_song.save_alias_solution(
                 smatcher.Song(
                     "Manual Waterfalls",
@@ -83,24 +78,10 @@ class E2ETestCaseManual(unittest.TestCase):
             )
             status = basic_match_checks(self, conn)
             self.assertEqual(status, "human", "Status should be human")
-            # match_candidate count
-            rows = conn.execute(
-                "SELECT song_id FROM match_candidate",
-            ).fetchall()
-            self.assertGreaterEqual(
-                len(rows),
-                self.match_candidate_count,
-                f"Candidates are now less - {self.match_candidate_count} vs {len(rows)}",
-            )
+            self.match_candidate_count = candidate_eqgr(self, conn, self.match_candidate_count)
             # song_alias
-            rows = conn.execute(
-                "SELECT song_id, kind FROM song_alias WHERE kind = 'alias'"
-            ).fetchall()
-            self.assertEqual(
-                len(rows),
-                1,
-                f"A song alias should be created - found {len(rows)}",
-            )
+            check_alias_created(self, conn)
+            check_zero_tocheck(self, conn)
 
     @classmethod
     def tearDownClass(cls):

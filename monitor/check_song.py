@@ -1,13 +1,17 @@
-import sqlite3
+from typing import TYPE_CHECKING
 
 from monitor import smatcher, utils
 from monitor.musicbrainz import find_releases as mb_find_releases
 from monitor.smatcher import CandidateByID, CandidateBySong, CandidateList, Song, db_find
 from monitor.utils import print_ascii_table
 
+if TYPE_CHECKING:
+    from onlymaps import Database
 
-def find_play_tocheck(last_id: int, conn: sqlite3.Connection) -> tuple[int, int]:
-    return conn.execute(
+
+def find_play_tocheck(last_id: int, conn: "Database") -> tuple[int, int] | None:
+    return conn.fetch_one_or_none(
+        tuple[int, int],
         """
 SELECT play_id, song_id
 FROM play_resolution
@@ -15,25 +19,28 @@ WHERE status = 'pending'
 AND play_id > ?
 ORDER BY play_id ASC
 LIMIT 1""",
-        (last_id,),
-    ).fetchone()
+        last_id,
+    )
 
 
-def find_play(play_id: int, conn: sqlite3.Connection) -> tuple[str, str]:
-    return conn.execute(
+def find_play(play_id: int, conn: "Database") -> tuple[str, str]:
+    return conn.fetch_one(
+        tuple[str, str],
         """
 SELECT title_raw, performer_raw
 FROM play
 WHERE play_id = ?
 """,
-        (play_id,),
-    ).fetchone()
+        play_id,
+    )
 
 
-def check_match_candidates(
-    play_id: int, title: str, performer: str, conn: sqlite3.Connection
-) -> list[int]:
-    rows = conn.execute(
+__Full_Candidate = tuple[str, str, str, int | None, str | None, float | None, int]
+
+
+def check_match_candidates(play_id: int, title: str, performer: str, conn: "Database") -> list[int]:
+    rows = conn.fetch_many(
+        __Full_Candidate,
         """
 SELECT
     s.song_title,
@@ -48,8 +55,8 @@ JOIN song as s ON s.song_id = mc.song_id
 WHERE mc.play_id = ?
 ORDER BY mc.candidate_score DESC
 """,
-        (play_id,),
-    ).fetchall()
+        play_id,
+    )
 
     ssongs = solve_all_similar_candidates(play_id, title, performer, rows, conn)
     if ssongs:
@@ -77,35 +84,29 @@ ORDER BY mc.candidate_score DESC
     return [row[6] for row in rows]
 
 
-def count_todo(last_id: int, conn: sqlite3.Connection) -> int:
-    return conn.execute(
+def count_todo(last_id: int, conn: "Database") -> int:
+    return conn.fetch_one(
+        int,
         """
             SELECT COUNT(play_id)
             FROM play_resolution
                 WHERE status = 'pending'
                 AND play_id > ?""",
-        (last_id,),
-    ).fetchone()[0]
+        last_id,
+    )
 
 
 def solve_all_similar_candidates(
     play_id: int,
     title: str,
     performer: str,
-    rows: list[tuple],
-    conn: sqlite3.Connection,
-) -> list[tuple]:
+    rows: list[__Full_Candidate],
+    conn: "Database",
+) -> list[__Full_Candidate]:
     titles = set[str]()
     performers = set[str]()
     oldest = (None, 0)
     for row in rows:
-        # s.song_title,
-        # s.song_performers,
-        # s.isrc,
-        # s.year,
-        # s.country,
-        # s.duration,
-        # mc.song_id
         titles.add(utils.clear_title(row[0]))
         performers.add(utils.clear_artist(row[1]))
         nyear: int | None = row[3]
@@ -160,9 +161,7 @@ def input_from_user(full=True) -> Song | None:
     )
 
 
-def save_alias_solution(
-    s: Song | int, play_id: int, conn: sqlite3.Connection, method="human"
-) -> None:
+def save_alias_solution(s: Song | int, play_id: int, conn: "Database", method="human") -> None:
     if isinstance(s, int):
         c = CandidateByID(s, 1, method)
         cl: list[CandidateByID] = [c]
@@ -174,7 +173,7 @@ def save_alias_solution(
     smatcher.save_candidates(candidates, conn)
     smatcher.save_resolution(candidates, conn, method)
     if isinstance(s, int):
-        conn.execute(
+        conn.exec(
             """
             INSERT INTO song_alias
             (song_id, kind,  title, performers, source) VALUES
@@ -182,10 +181,12 @@ def save_alias_solution(
                             (SELECT pt.title_raw FROM play pt WHERE pt.play_id = ?),
                                     (SELECT pp.performer_raw FROM play pp WHERE pp.play_id = ?),
                                                 'manual')""",
-            (s, play_id, play_id),
+            s,
+            play_id,
+            play_id,
         )
     else:
-        conn.execute(
+        conn.exec(
             """
             INSERT INTO song_alias
             (song_id, kind,  title, performers, source) VALUES
@@ -194,12 +195,13 @@ def save_alias_solution(
                             (SELECT pt.title_raw FROM play pt WHERE pt.play_id = ?),
                                     (SELECT pp.performer_raw FROM play pp WHERE pp.play_id = ?),
                                                 'manual')""",
-            (s.unique_key(), play_id, play_id),
+            s.unique_key(),
+            play_id,
+            play_id,
         )
-    conn.commit()
 
 
-def ask_user(play_id: int, conn: sqlite3.Connection) -> bool:
+def ask_user(play_id: int, conn: "Database") -> bool:
     r = input_from_user(True)
     if not r:
         return False
@@ -207,7 +209,7 @@ def ask_user(play_id: int, conn: sqlite3.Connection) -> bool:
     return True
 
 
-def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
+def query_spotify(play_id: int, token: str, conn: "Database") -> bool:
     r = input_from_user(False)
     if not r:
         return False
@@ -243,7 +245,7 @@ def query_spotify(play_id: int, token: str, conn: sqlite3.Connection) -> bool:
     return True
 
 
-def edit_song(conn: sqlite3.Connection, default_song_id: int) -> None:
+def edit_song(conn: "Database", default_song_id: int) -> None:
     decision = input("Edit SONG - enter song id: ").strip().lower()
     try:
         song_id = int(decision)
@@ -253,7 +255,8 @@ def edit_song(conn: sqlite3.Connection, default_song_id: int) -> None:
         else:
             print("Edit terminated")
             return
-    r = conn.execute(
+    row = conn.fetch_one_or_none(
+        tuple[str, str, str | int, str, str, str | float],
         """
     SELECT
         song_title,
@@ -266,9 +269,9 @@ def edit_song(conn: sqlite3.Connection, default_song_id: int) -> None:
     WHERE
         song_id = ?
     """,
-        (song_id,),
+        song_id,
     )
-    if not (row := r.fetchone()):
+    if not row:
         print("Edit terminated - song not found")
         return
     print_ascii_table(
@@ -295,7 +298,7 @@ def edit_song(conn: sqlite3.Connection, default_song_id: int) -> None:
     except ValueError:
         pass
     if year or country:
-        r = conn.execute(
+        conn.exec(
             """
         UPDATE song
         SET
@@ -303,10 +306,10 @@ def edit_song(conn: sqlite3.Connection, default_song_id: int) -> None:
             country = COALESCE(?, country)
         WHERE song_id = ?
         """,
-            (year, country, song_id),
+            year,
+            country,
+            song_id,
         )
-        print(r.lastrowid)
-        conn.commit()
     else:
         print("Edit terminated - no data")
     return
@@ -330,7 +333,6 @@ def main() -> None:
                 candidates[play_id] = [smatcher.CAND_IGNORED]
                 smatcher.save_candidates(candidates, conn)
                 smatcher.save_resolution(candidates, conn, "human")
-                conn.commit()
                 continue
             song_match = db_find(title, performer, conn)
             if song_match:
@@ -339,7 +341,6 @@ def main() -> None:
                 candidates[play_id] = cl
                 smatcher.save_candidates(candidates, conn)
                 res = smatcher.save_resolution(candidates, conn)
-                conn.commit()
                 if res[play_id]:
                     # go back and should be solved
                     last_id -= 1
@@ -387,7 +388,6 @@ def main() -> None:
                         ]
                         smatcher.save_candidates(candidates, conn)
                         smatcher.save_resolution(candidates, conn)
-                        conn.commit()
                         print(" -> New results found")
                     else:
                         print(" -> No spotify results")
@@ -403,7 +403,6 @@ def main() -> None:
                         ]
                         smatcher.save_candidates(candidates, conn)
                         smatcher.save_resolution(candidates, conn)
-                        conn.commit()
                         print(" -> New results found")
                     else:
                         print(" -> No musicbrainz results")
@@ -427,7 +426,6 @@ def main() -> None:
                     candidates[play_id] = [smatcher.CAND_IGNORED]
                     smatcher.save_candidates(candidates, conn)
                     smatcher.save_resolution(candidates, conn, "human")
-                    conn.commit()
                     print(" -> Ignored!")
                     continue
                 case _:

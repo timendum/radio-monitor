@@ -1,11 +1,13 @@
-import sqlite3
 import unicodedata
 from time import sleep
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from monitor import utils
 from monitor.spotify import SpSong, get_token, spotify_find
 from monitor.utils import calc_score
+
+if TYPE_CHECKING:
+    from onlymaps import Database
 
 
 class Song(NamedTuple):
@@ -71,7 +73,7 @@ def build_match_expr(title: str, performer: str) -> str:
     return " AND ".join(parts)
 
 
-def db_find(title: str, performer: str, conn: sqlite3.Connection) -> list[tuple[int, float]]:
+def db_find(title: str, performer: str, conn: "Database") -> list[tuple[int, float]]:
     """
     Search FTS5 by title and/or performer.
     Returns canonical display fields with bm25 score:
@@ -102,13 +104,14 @@ def db_find(title: str, performer: str, conn: sqlite3.Connection) -> list[tuple[
             if calc_score(title, performer, row[3], row[4]) == 1.0  # perfect alias match
             else calc_score(title, performer, row[1], row[2]),
         )
-        for row in conn.execute(sql, (match_expr,)).fetchall()
+        for row in conn.fetch_many(tuple[int, str, str, str, str, float], sql, match_expr)
     ]
     return sorted(rows, key=lambda r: r[1], reverse=True)[:5]
 
 
-def find_play_todo(conn: sqlite3.Connection, limit=20) -> list[Any]:
-    return conn.execute(
+def find_play_todo(conn: "Database", limit=20) -> list[tuple[int, str, str]]:
+    return conn.fetch_many(
+        tuple[int, str, str],
         """
 SELECT p.play_id, p.title_raw, p.performer_raw
 FROM play AS p
@@ -116,99 +119,98 @@ LEFT JOIN match_candidate AS mc ON mc.play_id = p.play_id
 WHERE mc.play_id IS NULL
 ORDER BY p.inserted_at ASC
 LIMIT ?""",
-        (limit,),
-    ).fetchall()
+        limit,
+    )
 
 
 CAND_TODO = CandidateBySong(Song("TODO", "TODO", (), None, 0, "", 0), 0, "todo")
 CAND_IGNORED = CandidateBySong(Song("TODO", "TODO", (), None, 1, "", 0), 1, "todo")
 
 
-def save_candidates(candidates: dict[int, CandidateList], conn: sqlite3.Connection):
-    # SONG
-    conn.executemany(
-        """
+def save_candidates(candidates: dict[int, CandidateList], conn: "Database"):
+    with conn.transaction():
+        for cl in candidates.values():
+            for c in cl:
+                if c == CAND_TODO or c == CAND_IGNORED:
+                    continue
+                if isinstance(c, CandidateBySong):
+                    # SONG
+                    conn.exec(
+                        """
     INSERT INTO song
         (song_title, song_performers, song_key, isrc, year, country, duration) VALUES
         (?,          ?,               ?,        ?,    ?,    ?,       ?     )
         ON CONFLICT DO NOTHING""",
-        (
-            (
-                c.song.title,
-                c.song.s_performers,
-                c.song.unique_key(),
-                c.song.isrc,
-                c.song.year,
-                c.song.country,
-                c.song.duration,
-            )
-            for cl in candidates.values()
-            for c in cl
-            if c != CAND_TODO and c != CAND_IGNORED and isinstance(c, CandidateBySong)
-        ),
-    )
-    # artist
-    conn.executemany(
-        """
-    INSERT INTO artist
-        (artist_name) VALUES
-        (?)
-        ON CONFLICT DO NOTHING""",
-        (
-            (p,)
-            for cl in candidates.values()
-            for c in cl
-            if c != CAND_TODO and c != CAND_IGNORED and isinstance(c, CandidateBySong)
-            for p in c.song.l_performers
-        ),
-    )
-    # song_artist
-    conn.executemany(
-        """
-    INSERT INTO song_artist
-        (song_id, artist_id) VALUES
-        ((SELECT s.song_id FROM song s WHERE song_key = ?),
-                  (SELECT artist_id FROM artist WHERE artist_name = ?))
-        ON CONFLICT DO NOTHING""",
-        (
-            (c.song.unique_key(), p)
-            for cl in candidates.values()
-            for c in cl
-            if c != CAND_TODO and c != CAND_IGNORED and isinstance(c, CandidateBySong)
-            for p in c.song.l_performers
-        ),
-    )
-    # never delete old match_candidate entries
-    # match_candidate by song title+performers
-    conn.executemany(
-        """
-    INSERT INTO match_candidate
-        (play_id, song_id, candidate_score, method) VALUES
-        (?,       (SELECT s.song_id FROM song s WHERE song_key = ?),
-                           ?,               ?     )
-        ON CONFLICT DO NOTHING""",
-        (
-            (play_id, c.song.unique_key(), c.score, c.method)
-            for play_id, cl in candidates.items()
-            for c in cl
-            if isinstance(c, CandidateBySong)
-        ),
-    )
-    # match_candidate by song id
-    conn.executemany(
-        """
-    INSERT INTO match_candidate
-        (play_id, song_id, candidate_score, method) VALUES
-        (?,       ?,       ?,               ?     )
-        ON CONFLICT DO NOTHING""",
-        (
-            (play_id, c.song_id, c.score, c.method)
-            for play_id, cl in candidates.items()
-            for c in cl
-            if isinstance(c, CandidateByID)
-        ),
-    )
-    conn.commit()
+                        c.song.title,
+                        c.song.s_performers,
+                        c.song.unique_key(),
+                        c.song.isrc,
+                        c.song.year,
+                        c.song.country,
+                        c.song.duration,
+                    )
+        # artist
+        for cl in candidates.values():
+            for c in cl:
+                if c == CAND_TODO or c == CAND_IGNORED:
+                    continue
+                if isinstance(c, CandidateBySong):
+                    for p in c.song.l_performers:
+                        conn.exec(
+                            """
+                        INSERT INTO artist
+                            (artist_name) VALUES
+                            (?)
+                            ON CONFLICT DO NOTHING""",
+                            p,
+                        )
+        # song_artist
+        for cl in candidates.values():
+            for c in cl:
+                if c == CAND_TODO or c == CAND_IGNORED:
+                    continue
+                if isinstance(c, CandidateBySong):
+                    for p in c.song.l_performers:
+                        conn.exec(
+                            """
+                        INSERT INTO song_artist
+                            (song_id, artist_id) VALUES
+                            ((SELECT s.song_id FROM song s WHERE song_key = ?),
+                                    (SELECT artist_id FROM artist WHERE artist_name = ?))
+                            ON CONFLICT DO NOTHING""",
+                            c.song.unique_key(),
+                            p,
+                        )
+        # never delete old match_candidate entries
+        # match_candidate by song title+performers
+        for play_id, cl in candidates.items():
+            for c in cl:
+                if isinstance(c, CandidateBySong):
+                    conn.exec(
+                        """
+                    INSERT INTO match_candidate
+                        (play_id, song_id, candidate_score, method) VALUES
+                        (?,       (SELECT s.song_id FROM song s WHERE song_key = ?),
+                                        ?,               ?     )
+                        ON CONFLICT DO NOTHING""",
+                        play_id,
+                        c.song.unique_key(),
+                        c.score,
+                        c.method,
+                    )
+                    # match_candidate by song id
+                else:
+                    conn.exec(
+                        """
+                    INSERT INTO match_candidate
+                        (play_id, song_id, candidate_score, method) VALUES
+                        (?,       ?,       ?,               ?     )
+                        ON CONFLICT DO NOTHING""",
+                        play_id,
+                        c.song_id,
+                        c.score,
+                        c.method,
+                    )
 
 
 def find_best_candidate(
@@ -247,7 +249,7 @@ def find_best_candidate(
 
 
 def save_resolution(
-    candidates: dict[int, CandidateList], conn: sqlite3.Connection, reason="auto"
+    candidates: dict[int, CandidateList], conn: "Database", reason="auto"
 ) -> dict[int, bool]:
     resolution_map = dict[int, bool]()
     for play_id, candidates_list in candidates.items():
@@ -258,24 +260,25 @@ def save_resolution(
             song_id = resolution.song_id
         else:
             # Look up song_id
-            row = conn.execute(
+            song_id = conn.fetch_one_or_none(
+                int,
                 """
             SELECT song_id FROM song
             WHERE song_key = ?""",
-                (resolution.song.unique_key(),),
-            ).fetchone()
-            if row:
-                song_id = row[0]
+                resolution.song.unique_key(),
+            )
         if not song_id:
             raise ValueError("Song resolved but not found in DB")
-        conn.execute(
+        conn.exec(
             """INSERT OR REPLACE INTO play_resolution
             (play_id, song_id, chosen_score, status) VALUES
             (?,       ?,       ?,            ?     )""",
-            (play_id, song_id, resolution.score, status),
+            play_id,
+            song_id,
+            resolution.score,
+            status,
         )
         resolution_map[play_id] = status != "pending"
-    conn.commit()
     return resolution_map
 
 

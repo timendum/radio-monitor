@@ -1,3 +1,5 @@
+"""Test no song found via spotify"""
+
 import unittest
 from pathlib import Path
 
@@ -35,7 +37,7 @@ class E2ETestCaseKO(unittest.TestCase):
             "{}",
         )
         with utils.conn_db() as conn:
-            station_name, title, performer, db_acquisition_id = one_play_checks(self, conn)
+            station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
             self.assertEqual(station_name, "deejay")
             self.assertEqual(title, "uth234jknsfu238y74h SDflkhjiou2y3")
             self.assertEqual(performer, "adfklsjniouy23ghoi")
@@ -50,10 +52,10 @@ class E2ETestCaseKO(unittest.TestCase):
                 smatcher.main()
             basic_match_checks(self, conn)
             # artist
-            rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
+            rows = conn.fetch_many(int, "SELECT artist_id, artist_name FROM artist")
             self.assertEqual(len(rows), 0, "No artist rows should exists")
             # song
-            rows = conn.execute("SELECT song_id, song_title FROM song").fetchall()
+            rows = conn.fetch_many(tuple[int, str], "SELECT song_id, song_title FROM song")
             self.assertEqual(len(rows), 1, "No song rows should exists")
             for row in rows:
                 self.assertEqual(row[1], "TODO", "No new song rows should exists")

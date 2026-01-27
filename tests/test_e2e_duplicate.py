@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 import vcr
-from test_e2e_ok import basic_match_checks, empty_songs_checks
+from test_e2e_ok import basic_match_checks, empty_songs_checks, one_play_checks
 from vcr.record_mode import RecordMode
 
 from monitor import db_init, smatcher, utils
@@ -29,7 +29,7 @@ class E2ETestCaseDuplicate(unittest.TestCase):
         """Perform a match against Spotify and verify db"""
         with utils.conn_db() as conn:
             empty_songs_checks(self, conn)
-            conn.execute(
+            conn.exec(
                 """INSERT INTO play (
                 station_id,
                 observed_at,
@@ -44,21 +44,14 @@ class E2ETestCaseDuplicate(unittest.TestCase):
                 ?,
                 ?,
                 ?)""",
-                (
-                    "m2o",
-                    "2026-01-01T01:02:03Z",
-                    "Eh...Già",
-                    "Vasco Rossi",
-                    "E2ETestCaseDuplicate",
-                    "{}",
-                ),
+                "m2o",
+                "2026-01-01T01:02:03Z",
+                "Eh...Già",
+                "Vasco Rossi",
+                "E2ETestCaseDuplicate",
+                "{}",
             )
-            conn.commit()
-            # Play id from test_1a_dj
-            p_rows = conn.execute("SELECT play_id, title_raw, performer_raw FROM play").fetchall()
-            self.assertEqual(len(p_rows), 1)
-            self.assertEqual(len(p_rows[0]), 3)
-            play_id = p_rows[0][0]
+            _, _, _, _, play_id = one_play_checks(self, conn)
             self.assertIsInstance(play_id, int)
             my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
             with my_vcr.use_cassette(
@@ -67,12 +60,13 @@ class E2ETestCaseDuplicate(unittest.TestCase):
                 smatcher.main()
             basic_match_checks(self, conn)
             # artist
-            rows = conn.execute("SELECT artist_id, artist_name FROM artist").fetchall()
+            rows = conn.fetch_many(tuple[int, str], "SELECT artist_id, artist_name FROM artist")
             artists = {row[1] for row in rows}
             self.assertEqual(len(rows), len(artists), "Duplicate artists found in artist table")
-            rows = conn.execute(
-                "SELECT song_id, song_key, song_title, song_performers FROM song"
-            ).fetchall()
+            rows = conn.fetch_many(
+                tuple[int, str, str, str],
+                "SELECT song_id, song_key, song_title, song_performers FROM song",
+            )
             song_keys = {row[1] for row in rows}
             self.assertEqual(len(rows), len(song_keys), "Duplicate song keys found in song table")
             songs = {(row[2] + row[3]).strip().lower() for row in rows}

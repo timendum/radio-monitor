@@ -1,5 +1,4 @@
 import re
-import sqlite3
 import unicodedata
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -7,14 +6,16 @@ from datetime import datetime
 from difflib import SequenceMatcher
 from typing import Any
 
+from onlymaps import Database, connect
+
 
 @contextmanager
-def conn_db(path="radio.sqlite3") -> Iterator[sqlite3.Connection]:
-    conn = sqlite3.Connection(path)
+def conn_db(path="radio.sqlite3") -> Iterator[Database]:
+    conn = connect(f"sqlite:///{path}")
+    conn.open()
     try:
         yield conn
     finally:
-        conn.commit()
         conn.close()
 
 
@@ -36,7 +37,8 @@ def insert_into_radio(
             timestamp = datetime.now()
         # Avoid duplicates
         lasts = (
-            conn.execute(
+            conn.fetch_one_or_none(
+                tuple[str, str, str],
                 """
     SELECT observed_at, title_raw, performer_raw
     FROM play
@@ -44,8 +46,9 @@ def insert_into_radio(
     ORDER BY ABS(strftime('%s', observed_at) - strftime('%s', ?))
     LIMIT 2
     """,
-                (radio, timestamp.isoformat()),
-            ).fetchall()
+                radio,
+                timestamp.isoformat(),
+            )
             or ()
         )
         for _, t, p in lasts:
@@ -54,7 +57,7 @@ def insert_into_radio(
                 return radio, p, t
 
         # Insert
-        conn.execute(
+        conn.exec(
             """INSERT INTO play (
                 station_id,
                 observed_at,
@@ -69,9 +72,13 @@ def insert_into_radio(
                 ?,
                 ?,
                 ?)""",
-            (radio, timestamp.isoformat(), title, performer, acquisition_id, payload),
+            radio,
+            timestamp.isoformat(),
+            title,
+            performer,
+            acquisition_id,
+            payload,
         )
-        conn.commit()
         return radio, performer, title
 
 
