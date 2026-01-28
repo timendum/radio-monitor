@@ -36,20 +36,17 @@ def insert_into_radio(
         if not timestamp:
             timestamp = datetime.now()
         # Avoid duplicates
-        lasts = (
-            conn.fetch_one_or_none(
-                tuple[str, str, str],
-                """
+        lasts = conn.fetch_many(
+            tuple[str, str, str],
+            """
     SELECT observed_at, title_raw, performer_raw
     FROM play
     WHERE station_id = (SELECT station_id FROM station WHERE station_code = ?)
     ORDER BY ABS(strftime('%s', observed_at) - strftime('%s', ?))
     LIMIT 2
     """,
-                radio,
-                timestamp.isoformat(),
-            )
-            or ()
+            radio,
+            timestamp.isoformat(),
         )
         for _, t, p in lasts:
             if t == title and p == performer:
