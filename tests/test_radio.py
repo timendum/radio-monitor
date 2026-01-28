@@ -153,6 +153,26 @@ class RadiosTestCaseDJ(unittest.TestCase):
             # Clean up
             conn.exec("DELETE FROM play")
 
+    def test_double_dj(self):
+        """Insert a know song, the match in db"""
+        my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
+        acquisition_id = utils.generate_batch("e2e_dj")
+        with my_vcr.use_cassette("fixtures/e2e_dj.yml"):  # type: ignore
+            deejay.main(acquisition_id)
+        with utils.conn_db() as conn:
+            station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
+            self.assertEqual(station_name, "deejay")
+            self.assertEqual(title, "When I Come Around")
+            self.assertEqual(performer, "GREEN DAY")
+            self.assertEqual(db_acquisition_id, acquisition_id)
+        with my_vcr.use_cassette("fixtures/e2e_dj.yml"):  # type: ignore
+            deejay.main(acquisition_id)
+        with utils.conn_db() as conn:
+            # no double insert
+            station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
+            # Clean up
+            conn.exec("DELETE FROM play")
+
     @classmethod
     def tearDownClass(cls):
         utils.conn_db = cls.orig_db
