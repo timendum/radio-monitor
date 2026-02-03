@@ -56,12 +56,15 @@ class RadiosTestCaseDJ(unittest.TestCase):
             capital.main(acquisition_id)
         with utils.conn_db() as conn:
             station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
-            self.assertEqual(station_name, "capital")
-            self.assertEqual(title, "Catching Bodies")
-            self.assertEqual(performer, "SEKOU")
-            self.assertEqual(db_acquisition_id, acquisition_id)
-            # Clean up
-            conn.exec("DELETE FROM play")
+            try:
+                self.assertEqual(station_name, "capital")
+                self.assertEqual(title, "Catching Bodies")
+                self.assertEqual(performer, "SEKOU")
+                self.assertEqual(db_acquisition_id, acquisition_id)
+            finally:
+                # Clean up
+                conn.exec("DELETE FROM play")
+
 
     def test_m2o(self):
         """Insert a know song, the match in db"""
@@ -71,12 +74,15 @@ class RadiosTestCaseDJ(unittest.TestCase):
             m2o.main(acquisition_id)
         with utils.conn_db() as conn:
             station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
-            self.assertEqual(station_name, "m2o")
-            self.assertEqual(title, "The Fate of Ophelia")
-            self.assertEqual(performer, "TAYLOR SWIFT")
-            self.assertEqual(db_acquisition_id, acquisition_id)
-            # Clean up
-            conn.exec("DELETE FROM play")
+            try:
+                self.assertEqual(station_name, "m2o")
+                self.assertEqual(title, "The Fate of Ophelia")
+                self.assertEqual(performer, "TAYLOR SWIFT")
+                self.assertEqual(db_acquisition_id, acquisition_id)
+            finally:
+                # Clean up
+                conn.exec("DELETE FROM play")
+
 
     def test_r101(self):
         """Insert a know song, the match in db"""
@@ -86,12 +92,15 @@ class RadiosTestCaseDJ(unittest.TestCase):
             r101.main(acquisition_id)
         with utils.conn_db() as conn:
             station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
-            self.assertEqual(station_name, "r101")
-            self.assertEqual(title, "SNAP")
-            self.assertEqual(performer, "ROSA LINN")
-            self.assertEqual(db_acquisition_id, acquisition_id)
-            # Clean up
-            conn.exec("DELETE FROM play")
+            try:
+                self.assertEqual(station_name, "r101")
+                self.assertEqual(title, "MON AMOUR")
+                self.assertEqual(performer, "ANNALISA")
+                self.assertEqual(db_acquisition_id, acquisition_id)
+            finally:
+                # Clean up
+                conn.exec("DELETE FROM play")
+
 
     def test_r105(self):
         """Insert a know song, the match in db"""
@@ -101,12 +110,14 @@ class RadiosTestCaseDJ(unittest.TestCase):
             r105.main(acquisition_id)
         with utils.conn_db() as conn:
             station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
-            self.assertEqual(station_name, "r105")
-            self.assertEqual(title, "NO CAP (Radio Edit)")
-            self.assertEqual(performer, "DISCLOSURE & ANDERSON .PAAK")
-            self.assertEqual(db_acquisition_id, acquisition_id)
-            # Clean up
-            conn.exec("DELETE FROM play")
+            try:
+                self.assertEqual(station_name, "r105")
+                self.assertEqual(title, "DEEPER")
+                self.assertEqual(performer, "DISCLOSURE ft. LEON THOMAS")
+                self.assertEqual(db_acquisition_id, acquisition_id)
+            finally:
+                # Clean up
+                conn.exec("DELETE FROM play")
 
     def test_rds(self):
         """Insert a know song, the match in db"""
@@ -116,12 +127,14 @@ class RadiosTestCaseDJ(unittest.TestCase):
             rds.main(acquisition_id)
         with utils.conn_db() as conn:
             station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
-            self.assertEqual(station_name, "rds")
-            self.assertEqual(title, "Camera")
-            self.assertEqual(performer, "Ed Sheeran")
-            self.assertEqual(db_acquisition_id, acquisition_id)
-            # Clean up
-            conn.exec("DELETE FROM play")
+            try:
+                self.assertEqual(station_name, "rds")
+                self.assertEqual(title, "Camera")
+                self.assertEqual(performer, "Ed Sheeran")
+                self.assertEqual(db_acquisition_id, acquisition_id)
+            finally:
+                # Clean up
+                conn.exec("DELETE FROM play")
 
     def test_dj(self):
         """Insert a know song, the match in db"""
@@ -131,12 +144,14 @@ class RadiosTestCaseDJ(unittest.TestCase):
             deejay.main(acquisition_id)
         with utils.conn_db() as conn:
             station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
-            self.assertEqual(station_name, "deejay")
-            self.assertEqual(title, "When I Come Around")
-            self.assertEqual(performer, "GREEN DAY")
-            self.assertEqual(db_acquisition_id, acquisition_id)
-            # Clean up
-            conn.exec("DELETE FROM play")
+            try:
+                self.assertEqual(station_name, "deejay")
+                self.assertEqual(title, "When I Come Around")
+                self.assertEqual(performer, "GREEN DAY")
+                self.assertEqual(db_acquisition_id, acquisition_id)
+            finally:
+                # Clean up
+                conn.exec("DELETE FROM play")
 
     def test_virgin(self):
         """Insert a know song, the match in db"""
@@ -146,12 +161,14 @@ class RadiosTestCaseDJ(unittest.TestCase):
             virgin.main(acquisition_id)
         with utils.conn_db() as conn:
             station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
-            self.assertEqual(station_name, "virgin")
-            self.assertEqual(title, "BUCKLE")
-            self.assertEqual(performer, "FLORENCE + THE MACHINE")
-            self.assertEqual(db_acquisition_id, acquisition_id)
-            # Clean up
-            conn.exec("DELETE FROM play")
+            try:
+                self.assertEqual(station_name, "virgin")
+                self.assertEqual(title, "MAN ON A MISSION")
+                self.assertEqual(performer, "BLACK KEYS")
+                self.assertEqual(db_acquisition_id, acquisition_id)
+            finally:
+                # Clean up
+                conn.exec("DELETE FROM play")
 
     def test_double_dj(self):
         """Insert a know song, the match in db"""

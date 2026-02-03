@@ -13,50 +13,61 @@ interactions:
       User-Agent:
       - python-httpx/0.28.1
     method: GET
-    uri: https://www.r101.it/custom_widget/finelco/getStreamInfo.jsp?host=http%3A%2F%2Ficecast.unitedradio.it%2Fr101
+    uri: https://www.r101.it/wp-json/mediaset-mediaplayer/v1/getStreamInfo?stream=http%3A%2F%2Ficecast.unitedradio.it%2Fr101
   response:
     body:
-      string: !!binary |
-        H4sIAAAAAAAA/01Q0WrDMAx8D+QfSp6XKHZiNy6M0cfBlo31CxTPST3iJMRKWTf273PWsVUguJPE
-        6aQ42vxG/Ic+Ez8OXbJLDvX+OblJ9Hgyc6BHosnvAKxnqfd95j48IVmd6dGBddgZoOPiGnhcvNWc
-        MziVsH0F5KBEAMiVKDDVWOlUyrJNOfJt2hTI2rbUBas0MCVFpUollVDZ29SBzPP3kE2zsuDF0jIY
-        f2XGrbsynKbeXHwQ4EzWE8yjx7S3wwBMVLkUXMr8bhlvyyBzGQkyL0+H/ebhvq5D8WxwPTNf+32z
-        uIADJEu9+X8GnaeV/XzoK4qjb0SrO0hBAQAA
+      string: '{"success":true,"title":"ANNALISA","artist":"MON AMOUR","album":"","year":"0","isrc":null,"duration":null,"raw":"ANNALISA~MON
+        AMOUR~~0"}'
     headers:
-      AType:
-      - A-NEW-MEDIASET2-SSL
+      Access-Control-Allow-Headers:
+      - Authorization, X-WP-Nonce, Content-Disposition, Content-MD5, Content-Type
+      Access-Control-Expose-Headers:
+      - X-WP-Total, X-WP-TotalPages, Link
+      Age:
+      - '35'
+      Allow:
+      - GET
       Alt-Svc:
       - h3=":443"; ma=86400
       Cache-Control:
-      - public,s-maxage=30,max-age=30,stale-if-error
+      - public, max-age=20, s-maxage=20, stale-while-revalidate=60, stale-if-error=86400
       Connection:
       - keep-alive
-      Content-Encoding:
-      - gzip
+      Content-Security-Policy:
+      - upgrade-insecure-requests
       Content-Type:
-      - application/json;charset=UTF-8
+      - application/json; charset=UTF-8
       Date:
-      - Mon, 22 Dec 2025 14:35:33 GMT
+      - Thu, 29 Jan 2026 13:10:20 GMT
+      Expires:
+      - Thu, 29 Jan 2026 13:10:40 GMT
+      Link:
+      - <https://www.r101.it/wp-json/>; rel="https://api.w.org/"
       Server:
-      - nginx/1.18.0 (Ubuntu)
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
       Transfer-Encoding:
       - chunked
-      Type:
-      - NEW-MEDIASET2-https
       Via:
-      - 1.1 973a7bbddb117b58bca3bb1a1c6dc7c6.cloudfront.net (CloudFront)
+      - 1.1 28cccb1191e9f0186683cc9c06509478.cloudfront.net (CloudFront)
       X-Amz-Cf-Id:
-      - r08CRLPcJSvGRFl1ToXcAhHuIHTw7vQLf2Jkt69XpfFpT6RBF_K4iw==
+      - Vbg8kVGlzRKYDxGSA9T8NsfQwRWhvB_wP6jhz7tYSZEUcepYmu8T2A==
       X-Amz-Cf-Pop:
       - MXP53-P7
-      X-CDN:
-      - Imperva
       X-Cache:
-      - Miss from cloudfront
-      X-Iinfo:
-      - 5-17303485-17303182 3NYN RT(1766414133169 2) q(0 0 0 0) r(2 2)
-      server-node:
-      - '2'
+      - Hit from cloudfront
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Mediaset-CacheControl:
+      - active
+      X-Robots-Tag:
+      - noindex
+      X-XSS-Protection:
+      - 1; mode=block
     status:
       code: 200
       message: OK

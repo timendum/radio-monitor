@@ -13,48 +13,63 @@ interactions:
       User-Agent:
       - python-httpx/0.28.1
     method: GET
-    uri: https://www.virginradio.it/custom_widget/finelco/getStreamInfo.jsp?host=https%3A%2F%2Ficy.unitedradio.it%2FVirgin.mp3
+    uri: https://www.virginradio.it/wp-json/mediaset-mediaplayer/v1/getStreamInfo?stream=https%3A%2F%2Ficy.unitedradio.it%2FVirgin.mp3
   response:
     body:
-      string: !!binary |
-        H4sIAAAAAAAA/+PlUoACXjirWqk4Py9dyUrJKdTZ28dVSUcpOb8stQgoAGRmlpTmpRZD2IlFJZnF
-        JUC2m49/kKufs6uCtkKIh6uCr6Ozh6cfSGNlaiJIn5GBkSlIfU5SaS6Q6xrmGhTp5O8SqRDsHOTq
-        6AuUKsksyUlFtrKksgDEB7uklouXCwAGKRNMqQAAAA==
+      string: '{"success":true,"title":"BLACK KEYS","artist":"MAN ON A MISSION","album":"NO
+        RAIN, NO FLOWERS","year":"2025","isrc":"","duration":"207","raw":"BLACK KEYS~MAN
+        ON A MISSION~NO RAIN, NO FLOWERS~2025~~207~2026-01-29T14:06:34~2026-01-29T14:06:34~Virgin
+        Radio"}'
     headers:
-      AType:
-      - A-NEW-MEDIASET1-SSL
+      Access-Control-Allow-Headers:
+      - Authorization, X-WP-Nonce, Content-Disposition, Content-MD5, Content-Type
+      Access-Control-Expose-Headers:
+      - X-WP-Total, X-WP-TotalPages, Link
+      Age:
+      - '7'
+      Allow:
+      - GET
       Alt-Svc:
       - h3=":443"; ma=86400
       Cache-Control:
-      - public,s-maxage=30,max-age=30,stale-if-error
+      - public, max-age=20, s-maxage=20, stale-while-revalidate=60, stale-if-error=86400
       Connection:
       - keep-alive
-      Content-Encoding:
-      - gzip
+      Content-Security-Policy:
+      - upgrade-insecure-requests
       Content-Type:
-      - application/json;charset=UTF-8
+      - application/json; charset=UTF-8
       Date:
-      - Mon, 22 Dec 2025 14:48:53 GMT
+      - Thu, 29 Jan 2026 13:10:13 GMT
+      Expires:
+      - Thu, 29 Jan 2026 13:10:33 GMT
+      Link:
+      - <https://www.virginradio.it/wp-json/>; rel="https://api.w.org/"
       Server:
-      - nginx/1.18.0 (Ubuntu)
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
       Transfer-Encoding:
       - chunked
-      Type:
-      - NEW-MEDIASET1-https
       Via:
-      - 1.1 f27399799a88e43e05ddb32625905f36.cloudfront.net (CloudFront)
+      - 1.1 0130cf0b43613750fd11e2a05ef321b2.cloudfront.net (CloudFront)
       X-Amz-Cf-Id:
-      - sqa6bcSbwfp1XX32YoB8K5k0xamTO5wN3Q_JOy1z-flnYU4Atd1YSA==
+      - Q7Gw6gnGR6SlolsTAFkrOIjudVxohs2Y3hAg3dzg1BnvKTRSGYqJ1A==
       X-Amz-Cf-Pop:
-      - MXP63-P3
-      X-CDN:
-      - Imperva
+      - MXP63-P6
       X-Cache:
-      - Miss from cloudfront
-      X-Iinfo:
-      - 12-65646722-65646225 3NYN RT(1766414933725 2) q(0 0 0 0) r(1 1)
-      server-node:
-      - '1'
+      - Hit from cloudfront
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Mediaset-CacheControl:
+      - active
+      X-Robots-Tag:
+      - noindex
+      X-XSS-Protection:
+      - 1; mode=block
     status:
       code: 200
       message: OK

@@ -1,6 +1,7 @@
 """Test to path virgin + musicbrainz"""
 
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 
 import vcr
@@ -29,9 +30,9 @@ class E2ETestCaseMB(unittest.TestCase):
 
     def test_1_virgin(self):
         """Insert a know song, the match in db"""
-        my_vcr = vcr.VCR(record_mode=RecordMode.ONCE)
         acquisition_id = utils.generate_batch("e2e_virgin")
-        with my_vcr.use_cassette("fixtures/e2e_virgin.yml"):  # type: ignore
+        with mock.patch("monitor.radio.virgin.parse", create=True) as mock_input:
+            mock_input.side_effect = [("FLORENCE + THE MACHINE", "BUCKLE", "{mock:true}")]
             virgin.main(acquisition_id)
         with utils.conn_db() as conn:
             station_name, title, performer, db_acquisition_id, _ = one_play_checks(self, conn)
