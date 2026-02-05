@@ -35,7 +35,7 @@ WHERE play_id = ?
     )
 
 
-__Full_Candidate = tuple[str, str, str, int | None, str | None, float | None, int]
+__Full_Candidate = tuple[str, str, str | None, int | None, str | None, float | None, int]
 
 
 def check_match_candidates(play_id: int, title: str, performer: str, conn: "Database") -> list[int]:
