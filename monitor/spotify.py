@@ -71,6 +71,9 @@ def find_releases(title: str, performer: str, token: str) -> list[SpSong]:
                 isrc=item["external_ids"].get("isrc", ""),
                 duration=int(item["duration_ms"] / 1000),
             )
+            if r.duration > 3600:
+                # too long, skip
+                continue
             findings.append(r)
     except KeyError:
         pass
