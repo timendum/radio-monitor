@@ -21,7 +21,15 @@ class Song(NamedTuple):
 
     @classmethod
     def from_spotify(cls, s: SpSong) -> "Song":
-        return cls(s.title, s.s_performers, s.l_performers, s.isrc, s.year, s.country, s.duration)
+        return cls(
+            s.title,
+            s.s_performers,
+            s.l_performers,
+            s.isrc,
+            s.year if s.year > 1900 else None,
+            s.country,
+            s.duration,
+        )
 
     def unique_key(self) -> str:
         atitle = unicodedata.normalize("NFKD", self.title).encode("ascii", "ignore")

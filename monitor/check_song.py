@@ -286,8 +286,10 @@ def query_spotify(play_id: int, token: str, conn: "Database") -> bool:
                 print(f" -> Saved {releases_id} for play {play_id}")
                 return True
         except ValueError:
-            pass
-    return True
+            print(" -> Skipped")
+    else:
+        print(" -> No results found")
+    return False
 
 
 def edit_song(conn: "Database", default_song_id: int) -> None:
@@ -442,7 +444,9 @@ def main() -> None:
                     continue
                 case "m" | "mb" | "mbrainz" | "musicbrainz":
                     # Try MusicBrainz search
-                    releases = mb_find_releases(title, performer)
+                    releases = mb_find_releases(
+                        utils.clear_title(title), utils.clear_artist(performer)
+                    )
                     if releases:
                         candidates[play_id] = [
                             CandidateBySong(Song.from_spotify(ss), ss.score, "mbrainz")
@@ -457,11 +461,7 @@ def main() -> None:
                     continue
                 case "s" | "spotify":
                     # Query Spotify with manual input for title+performer
-                    r = query_spotify(play_id, token, conn)
-                    if not r:
-                        print(" -> New results found")
-                    else:
-                        print(" -> No results found")
+                    _ = query_spotify(play_id, token, conn)
                     last_id -= 1
                     continue
                 case "e" | "i" | "entry" | "insert":
