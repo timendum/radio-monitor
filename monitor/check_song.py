@@ -93,7 +93,7 @@ ORDER BY mc.candidate_score DESC
         return rows
     _print_cl(title, performer, ssongs)
     decision = input("Auto solved: Accept (empty), other to handle it: ").strip().lower()
-    if decision:
+    if decision and decision not in (".", "!"):
         return rows
     solution: __FullCandidate = ssongs[0]
     save_alias_solution(solution.song_id, play_id, conn)
@@ -277,7 +277,7 @@ def query_spotify(play_id: int, token: str, conn: "Database") -> bool:
             head=0,
         )
         decision = input("Action (id to save, skip): ").strip()
-        if decision == "!":
+        if decision == "!" or decision == ".":
             decision = "0"
         try:
             releases_id = int(decision)
@@ -295,7 +295,7 @@ def edit_song(conn: "Database", default_song_id: int) -> None:
     try:
         song_id = int(decision)
     except ValueError:
-        if decision == "!":
+        if decision == "!" or decision == ".":
             song_id = default_song_id
         else:
             print("Edit terminated")
@@ -419,7 +419,7 @@ def main() -> None:
                 case "q" | "quit":
                     # Halt script
                     break
-                case "b" | "!" | "best":
+                case "b" | "!" | "best" | ".":
                     # Save best candidate
                     song_id = mc_song_ids[0]
                     save_alias_solution(song_id, play_id, conn)
