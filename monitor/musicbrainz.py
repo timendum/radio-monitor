@@ -53,7 +53,7 @@ def find_releases(title: str, artist: str) -> list[SpSong]:
     return sorted(findings, key=lambda r: r.score, reverse=True)
 
 
-def main():
+def main():  # pragma: no cover
     while True:
         title = input("Title (or q): ").strip()
         if not title:

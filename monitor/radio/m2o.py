@@ -29,5 +29,5 @@ def main(acquisition_id: str) -> None | tuple[str, str, str]:
     return utils.insert_into_radio("m2o", author, title, acquisition_id, None, payload)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     print(main(utils.generate_batch("m2o_main")))

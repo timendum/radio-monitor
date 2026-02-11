@@ -7,8 +7,8 @@ def parse(url: str, stream: str) -> tuple[str, str, str]:
     r = httpx.get(url, params={"stream": stream})
     r.raise_for_status()
     d = r.json()
-    if "success" not in d or not d['success']:
-        return "", "" ,""
+    if "success" not in d or not d["success"]:
+        return "", "", ""
     try:
         return d["title"], d["artist"], r.text
     except KeyError:
@@ -24,5 +24,5 @@ def main(acquisition_id: str) -> None | tuple[str, str, str]:
     return utils.insert_into_radio("vir", performer, title, acquisition_id, None, payload)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     print(main(utils.generate_batch("vir_main")))

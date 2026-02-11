@@ -44,5 +44,5 @@ def main(acquisition_id: str) -> None | tuple[str, str, str]:
     return None
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     print(main(utils.generate_batch("rtl_main")))

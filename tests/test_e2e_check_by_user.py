@@ -87,7 +87,31 @@ class E2ETestCaseCheckByUser(unittest.TestCase):
             self.assertEqual(s_rows[0], 1901, "Year should be changed")
             self.assertEqual(s_rows[1], "XX", "Country should be changed")
 
-    def test_4_ask_user(self):
+    def test_4_skip_title(self):
+        """Asking user but skip"""
+        with utils.conn_db() as conn:
+            check_one_tocheck(self, conn)
+            _, _, _, _, song_id = one_play_checks(self, conn)
+            with mock_input_print() as mock_input:
+                mock_input.side_effect = [""]
+                check_song.ask_user(song_id, conn)
+            status = basic_match_checks(self, conn)
+            self.assertEqual(status, "pending", "Status should be pending")
+            check_one_tocheck(self, conn)
+
+    def test_4_skip_country(self):
+        """Asking user but skip"""
+        with utils.conn_db() as conn:
+            check_one_tocheck(self, conn)
+            _, _, _, _, song_id = one_play_checks(self, conn)
+            with mock_input_print() as mock_input:
+                mock_input.side_effect = ["CTitle", "CArtist", "no-year", "1902", ""]
+                check_song.ask_user(song_id, conn)
+            status = basic_match_checks(self, conn)
+            self.assertEqual(status, "pending", "Status should be pending")
+            check_one_tocheck(self, conn)
+
+    def test_5_ask_user(self):
         """Solve by asking user"""
         with utils.conn_db() as conn:
             check_one_tocheck(self, conn)

@@ -94,7 +94,7 @@ def spotify_find(title: str, artist: str, token: str) -> list[SpSong]:
     return release
 
 
-def main():
+def main():  # pragma: no cover
     token = get_token()
     while True:
         title = input("Title (or q): ").strip()

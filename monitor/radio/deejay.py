@@ -17,5 +17,5 @@ def main(acquisition_id: str) -> None | tuple[str, str, str]:
     return utils.insert_into_radio("dj", d["artist"], d["title"], acquisition_id, timestamp, r.text)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     print(main(utils.generate_batch("dj_main")))

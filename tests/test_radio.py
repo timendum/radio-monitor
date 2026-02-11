@@ -65,7 +65,6 @@ class RadiosTestCaseDJ(unittest.TestCase):
                 # Clean up
                 conn.exec("DELETE FROM play")
 
-
     def test_m2o(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
@@ -83,7 +82,6 @@ class RadiosTestCaseDJ(unittest.TestCase):
                 # Clean up
                 conn.exec("DELETE FROM play")
 
-
     def test_r101(self):
         """Insert a know song, the match in db"""
         my_vcr = vcr.VCR(record_mode=RecordMode.NONE)
@@ -100,7 +98,6 @@ class RadiosTestCaseDJ(unittest.TestCase):
             finally:
                 # Clean up
                 conn.exec("DELETE FROM play")
-
 
     def test_r105(self):
         """Insert a know song, the match in db"""

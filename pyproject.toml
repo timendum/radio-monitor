@@ -41,5 +41,6 @@ line-length = 100
 
 [dependency-groups]
 dev = [
+    "coverage>=7.13.2",
     "vcrpy>=8.1.0",
 ]
