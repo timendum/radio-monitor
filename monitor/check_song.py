@@ -43,20 +43,22 @@ class __FullCandidate(NamedTuple):
     country: str | None
     duration: float | None
     song_id: int
+    nuses: int
 
 
 def _print_cl(title: str, performer: str, cl: list[__FullCandidate]) -> None:
     print_ascii_table(
         [
-            ["v", title, performer, "year", "country"],
+            ["v", title, performer, "year", "country", "#uses"],
         ]
         + [
             [
                 str(row[6]) + ("!" if i == 0 else ""),
-                row[0],
-                row[1],
-                row[3] or "",
-                row[4] or "",
+                row.title,
+                row.performers,
+                row.year or "",
+                row.country or "",
+                str(row.nuses),
             ]
             for i, row in enumerate(cl)
         ],
@@ -64,10 +66,8 @@ def _print_cl(title: str, performer: str, cl: list[__FullCandidate]) -> None:
     )
 
 
-def check_match_candidates(
-    play_id: int, title: str, performer: str, conn: "Database"
-) -> list[__FullCandidate]:
-    rows = conn.fetch_many(
+def find_match_candidates(play_id: int, conn: "Database") -> list[__FullCandidate]:
+    return conn.fetch_many(
         __FullCandidate,
         """
 SELECT
@@ -77,28 +77,19 @@ SELECT
     s.year,
     s.country,
     s.duration,
-    mc.song_id
-FROM match_candidate as mc
-JOIN song as s ON s.song_id = mc.song_id
+    mc.song_id,
+    (
+        SELECT COUNT(play_id)
+        FROM play_resolution AS pr
+        WHERE pr.song_id = mc.song_id AND status != 'pending'
+    )
+FROM match_candidate AS mc
+JOIN song AS s ON s.song_id = mc.song_id
 WHERE mc.play_id = ?
 ORDER BY mc.candidate_score DESC
 """,
         play_id,
     )
-
-    ssongs = solve_all_similar_candidates(play_id, title, performer, rows, conn)
-    if not ssongs:
-        ssongs = solve_similar_candidates(play_id, title, performer, rows, conn)
-    if not ssongs:
-        return rows
-    _print_cl(title, performer, ssongs)
-    decision = input("Auto solved: Accept (empty), other to handle it: ").strip().lower()
-    if decision and decision not in (".", "!"):
-        return rows
-    solution: __FullCandidate = ssongs[0]
-    save_alias_solution(solution.song_id, play_id, conn)
-    print(f" -> Saved {solution.song_id} for play {play_id}")
-    return []
 
 
 def count_todo(last_id: int, conn: "Database") -> int:
@@ -113,71 +104,31 @@ def count_todo(last_id: int, conn: "Database") -> int:
     )
 
 
-def solve_all_similar_candidates(
-    play_id: int,
-    title: str,
-    performer: str,
-    rows: list[__FullCandidate],
-    conn: "Database",
-) -> list[__FullCandidate]:
+def solve_similar_candidates(
+    play_id: int, title: str, performer: str, rows: list[__FullCandidate]
+) -> __FullCandidate | None:
+    clear_title = utils.clear_title(title)
+    clear_performer = utils.clear_artist(performer)
+    similar_oldest: tuple[None | int, int] = (None, -1)
+    clean_oldest: tuple[None | int, int] = (None, -1)
     titles = set[str]()
     performers = set[str]()
-    oldest: tuple[None | int, int] = (None, -1)  # year, song_id
     for row in rows:
-        titles.add(utils.clear_title(row[0]))
-        performers.add(utils.clear_artist(row[1]))
-        nyear: int | None = row[3]
-        if nyear and (oldest[0] is None or nyear < oldest[0]):
-            oldest = (nyear, row[6])
-    if len(titles) == 1 and len(performers) == 1 and oldest[0] is not None:
-        # one unique song and performer
-        new_title = titles.pop()
-        new_performer = performers.pop()
-        if (
-            utils.calc_score(
-                utils.clear_title(title),
-                utils.clear_artist(performer),
-                new_title,
-                new_performer,
-            )
-            > 0.8
-        ):
-            # good match, solve song
-            songs = [row for row in rows if row[6] == oldest[1]] + [
-                row for row in rows if row[6] != oldest[1]
-            ]
-            songs[0]
-            return songs
-    return []
-
-
-def solve_similar_candidates(
-    play_id: int,
-    title: str,
-    performer: str,
-    rows: list[__FullCandidate],
-    conn: "Database",
-) -> list[__FullCandidate]:
-    oldest: tuple[None | int, int] = (None, -1)  # year, song_id
-    for row in rows:
-        if (
-            utils.calc_score(
-                utils.clear_title(title),
-                utils.clear_artist(performer),
-                utils.clear_title(row.title),
-                utils.clear_artist(row.performers),
-            )
-        ) == 1:
-            # perfect simplified match
-            if row.year and (oldest[0] is None or row.year < oldest[0]):
-                oldest = (row.year, row.song_id)
-    if oldest[0]:
-        songs = [row for row in rows if row[6] == oldest[1]] + [
-            row for row in rows if row[6] != oldest[1]
-        ]
-        songs[0]
-        return songs
-    return []
+        row_title = utils.clear_title(row.title)
+        row_performers = utils.clear_artist(row.performers)
+        titles.add(row_title)
+        performers.add(row_performers)
+        if row.year and (similar_oldest[0] is None or row.year < similar_oldest[0]):
+            similar_oldest = (row.year, row.song_id)
+        if utils.calc_score(clear_title, clear_performer, row_title, row_performers) == 1:
+            if row.year and (clean_oldest[0] is None or row.year < clean_oldest[0]):
+                clean_oldest = (row.year, row.song_id)
+            if not row.year and clean_oldest[0] is None and clean_oldest[1] == -1:
+                clean_oldest = (row.year, row.song_id)
+    if len(titles) == 1 and len(performers) == 1 and similar_oldest[0] is not None:
+        if utils.calc_score(clear_title, clear_performer, titles.pop(), performers.pop()) > 0.8:
+            return next((row for row in rows if row.song_id == similar_oldest[1]), None)
+    return next((row for row in rows if row.song_id == clean_oldest[1]), None)
 
 
 def input_from_user(full=True) -> Song | None:
@@ -394,9 +345,12 @@ def main() -> None:
                     continue
             ncount = count_todo(last_id, conn)
             print(f"ID: {play_id} (todo: {ncount})")
-            songs = check_match_candidates(play_id, title, performer, conn)
-            if not songs:
-                continue
+            songs = find_match_candidates(play_id, conn)
+            best = solve_similar_candidates(
+                play_id, title, performer, songs
+            ) or solve_similar_candidates(play_id, title, performer, songs)
+            if best:
+                songs = [best] + [s for s in songs if s.song_id != best.song_id]
             _print_cl(title, performer, songs)
             mc_song_ids = [s.song_id for s in songs]
             decision = (
@@ -413,6 +367,12 @@ def main() -> None:
             except ValueError:
                 pass
             match decision:
+                case "":
+                    if best:
+                        song_id = mc_song_ids[0]
+                        save_alias_solution(song_id, play_id, conn)
+                        print(f" -> Saved {song_id} for play {play_id}")
+                    continue
                 case "e" | "edit":
                     # Edit song entry
                     edit_song(conn, mc_song_ids[0])
