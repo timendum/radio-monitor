@@ -313,6 +313,46 @@ def edit_song(conn: "Database", default_song_id: int) -> None:
     return
 
 
+def join_songs(conn: "Database") -> None:
+    tinput = input("Join songs - enter OLD id: ").strip().lower()
+    try:
+        old_song = int(tinput)
+    except ValueError:
+        print("Edit terminated")
+        return
+    tinput = input("Join songs - enter NEW id: ").strip().lower()
+    try:
+        new_song = int(tinput)
+    except ValueError:
+        print("Edit terminated")
+        return
+    conn.exec(
+        """
+    UPDATE play_resolution
+    SET
+        song_id = ?
+    WHERE
+        song_id = ?
+""",
+        new_song,
+        old_song,
+    )
+    conn.exec(
+        """
+    UPDATE song_alias
+    SET
+        song_id = ?
+    WHERE
+        song_id = ? AND
+        source = 'manual'
+""",
+        new_song,
+        old_song,
+    )
+    print(f"Done, changed {old_song} to {new_song}")
+    return
+
+
 def main() -> None:
     with utils.conn_db() as conn:
         last_id = -1
@@ -434,6 +474,9 @@ def main() -> None:
                     smatcher.save_candidates(candidates, conn)
                     smatcher.save_resolution(candidates, conn, "human")
                     print(" -> Ignored!")
+                    continue
+                case "j" | "join":
+                    join_songs(conn)
                     continue
                 case _:
                     # Other, skip
