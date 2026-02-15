@@ -477,6 +477,7 @@ def main() -> None:
                     continue
                 case "j" | "join":
                     join_songs(conn)
+                    last_id -= 1
                     continue
                 case _:
                     # Other, skip
