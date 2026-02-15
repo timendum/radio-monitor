@@ -35,9 +35,13 @@ def find_releases(title: str, artist: str) -> list[SpSong]:
                     country = isrc[:2]
             except BaseException:
                 pass
+            try:
+                year = int(release["date"][:4])
+            except (ValueError, KeyError):
+                year = 0
             findings.append(
                 SpSong(
-                    year=int(release.get("date", "0000")[:4]),
+                    year=year,
                     country=country,
                     title=str(recording["title"]),
                     s_performers=iartist,
