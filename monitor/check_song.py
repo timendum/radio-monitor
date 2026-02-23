@@ -316,40 +316,37 @@ def edit_song(conn: "Database", default_song_id: int) -> None:
 def join_songs(conn: "Database") -> None:
     tinput = input("Join songs - enter OLD id: ").strip().lower()
     try:
-        old_song = int(tinput)
+        slave_song = int(tinput)
     except ValueError:
         print("Edit terminated")
         return
-    tinput = input("Join songs - enter NEW id: ").strip().lower()
+    tinput = input("Join songs - enter MASTER id: ").strip().lower()
     try:
-        new_song = int(tinput)
+        master_song = int(tinput)
     except ValueError:
         print("Edit terminated")
         return
+    # check for consistency
+    if conn.fetch_one_or_none(
+        int, "SELECT song_id FROM song_work WHERE song_id = ?", master_song
+    ):
+        print("New song is already a slave of another song, cannot join")
+        return
+    master_song_id = conn.fetch_one_or_none(
+        int, "SELECT master_song_id FROM song_work WHERE song_id = ?", slave_song
+    )
+    if master_song_id:
+        print(f"Slave song is already a slave of {master_song_id} song, cannot join")
+        return
     conn.exec(
         """
-    UPDATE play_resolution
-    SET
-        song_id = ?
-    WHERE
-        song_id = ?
+    INSERT INTO song_work (song_id, master_song_id)
+    VALUES (?, ?)
 """,
-        new_song,
-        old_song,
+        slave_song,
+        master_song,
     )
-    conn.exec(
-        """
-    UPDATE song_alias
-    SET
-        song_id = ?
-    WHERE
-        song_id = ? AND
-        source = 'manual'
-""",
-        new_song,
-        old_song,
-    )
-    print(f"Done, changed {old_song} to {new_song}")
+    print(f"Done, {slave_song} is slave to {master_song}")
     return
 
 

@@ -74,7 +74,28 @@ CREATE TABLE song_artist (
 
 CREATE INDEX idx_song_artist_artist ON song_artist(artist_id);
 
--- ALIASES - to track other names of entites
+-- SONG WORKS - relate different versions/editions to a master song
+CREATE TABLE song_work (
+  song_id        INTEGER PRIMARY KEY REFERENCES song(song_id) ON DELETE CASCADE,
+  master_song_id INTEGER NOT NULL REFERENCES song(song_id) ON DELETE RESTRICT,
+  CHECK (song_id != master_song_id)
+);
+
+CREATE INDEX idx_song_work_master ON song_work(master_song_id);
+
+-- Track reviewed song pairs for work grouping decisions
+CREATE TABLE song_work_review (
+  song_id_a      INTEGER NOT NULL REFERENCES song(song_id) ON DELETE CASCADE,
+  song_id_b      INTEGER NOT NULL REFERENCES song(song_id) ON DELETE CASCADE,
+  same_work      INTEGER NOT NULL CHECK (same_work IN (0,1)),
+  reviewed_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  PRIMARY KEY (song_id_a, song_id_b),
+  CHECK (song_id_a < song_id_b)
+);
+
+CREATE INDEX idx_song_work_review_b ON song_work_review(song_id_b);
+
+-- ALIASES - to track other names of entities
 
 -- Unified variant table: holds canonical and alias rows
 CREATE TABLE IF NOT EXISTS song_alias (

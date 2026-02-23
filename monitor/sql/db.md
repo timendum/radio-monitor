@@ -30,10 +30,6 @@ Referenced by `play.station_id`.
 | `display_name` | TEXT    | Full display name of the station.                |
 | `active`       | INTEGER | 1 = active, 0 = inactive.                        |
 
-**Indexes:**  
-
-- `idx_station_country` (**unique**, for filtering by country if added later).
-
 **Constraints:**
 
 - `active` ensures only 0 or 1.
@@ -76,6 +72,10 @@ Canonical list of artists (normalized names).
 | `artist_id`   | INTEGER | Primary key. Unique artist identifier.           |
 | `artist_name` | TEXT    | Canonical artist name. Unique index enforced.    |
 
+**Constraints:**
+
+- **unique** `artist_name`.
+
 ---
 
 ## 5. `song`
@@ -103,7 +103,7 @@ Canonical representation of songs (title + performers) with enrichment attribute
 
 - `UNIQUE(song_title, song_performers)` prevents duplicates.
 - `UNIQUE(song_key)` prevents more duplicates, composed of title and performers, lowercase, only ascii.
-- CHECK constraints for year and duration.
+- CHECK constraints: year between 1900-2100, duration between 0-3600 seconds.
 
 ---
 
@@ -163,7 +163,55 @@ Full-text search index (FTS5) for `song_alias` to support fast, fuzzy/partial ma
 
 ---
 
-## 8. `match_candidate`
+## 8. `song_work`
+
+**Purpose:**  
+Relates different versions/editions of a song to a master song (e.g., remixes, live versions, covers).
+
+**Relationships:**
+
+- `song_id` → `song.song_id` (the variant)
+- `master_song_id` → `song.song_id` (the master/original)
+
+| Column           | Type    | Description                                      |
+|------------------|---------|--------------------------------------------------|
+| `song_id`        | INTEGER | Primary key. FK to `song`. The variant song.     |
+| `master_song_id` | INTEGER | FK to `song`. The master/original song.          |
+
+**Constraints:**
+
+- `CHECK(song_id != master_song_id)` prevents self-reference.
+
+---
+
+## 9. `song_work_review`
+
+**Purpose:**  
+Tracks reviewed song pairs for work grouping decisions (whether two songs are the same work).
+
+**Relationships:**
+
+- `song_id_a` → `song.song_id`
+- `song_id_b` → `song.song_id`
+
+| Column        | Type    | Description                                      |
+|---------------|---------|--------------------------------------------------|
+| `song_id_a`   | INTEGER | FK to `song`. First song in pair (lower ID).     |
+| `song_id_b`   | INTEGER | FK to `song`. Second song in pair (higher ID).   |
+| `same_work`   | INTEGER | 1 = same work, 0 = different works.              |
+| `reviewed_at` | TEXT    | Timestamp when review was done.                  |
+
+**Primary Key:**  
+(`song_id_a`, `song_id_b`) ensures uniqueness of pair.
+
+**Constraints:**
+
+- `CHECK(song_id_a < song_id_b)` ensures consistent ordering.
+- `same_work` ensures only 0 or 1.
+
+---
+
+## 10. `match_candidate`
 
 **Purpose:**  
 Stores all candidate matches for a play, useful for audit and human review.
@@ -174,12 +222,16 @@ Stores all candidate matches for a play, useful for audit and human review.
 | `play_id`        | INTEGER | FK to `play`. The raw play being matched.        |
 | `song_id`        | INTEGER | FK to `song`. Candidate song (nullable).         |
 | `candidate_score`| REAL    | Score (0–100) indicating match confidence.       |
-| `method`         | TEXT    | Matching method (e.g., `spotify`, `db`, `todo`). |
+| `method`         | TEXT    | Matching method.                                 |
 | `generated_at`   | TEXT    | Timestamp when candidate was generated.          |
+
+**Indexes:**
+
+- **unique** on `(play_id, song_id)`.
 
 ---
 
-## 9. `play_resolution`
+## 11. `play_resolution`
 
 **Purpose:**  
 Stores the final resolution of a play to a canonical song.
