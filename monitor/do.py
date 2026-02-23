@@ -1,5 +1,6 @@
 from monitor import smatcher
 from monitor.radio import do as radio
+from monitor.utils import RMError
 
 
 def main() -> None:
@@ -7,6 +8,8 @@ def main() -> None:
 
     try:
         smatcher.main()
+    except RMError as e:
+        print(e)
     except BaseException:
         import traceback
 

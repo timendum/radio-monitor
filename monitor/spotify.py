@@ -5,7 +5,7 @@ from functools import cache
 
 import httpx
 
-from monitor.utils import calc_score, clear_artist, clear_title, print_ascii_table
+from monitor.utils import RMError, calc_score, clear_artist, clear_title, print_ascii_table
 
 SPOTIFY_AUTH = os.environ["SPOTIFY_AUTH"]
 
@@ -31,7 +31,12 @@ def get_token() -> str:
         },
         data={"grant_type": "client_credentials"},
     )
-    r.raise_for_status()
+    try:
+        r.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 503:
+            raise RMError("Spotify token HTTP error 503") from e
+        raise e
     jr = r.json()
     return jr["access_token"]
 

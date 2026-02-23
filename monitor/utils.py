@@ -18,6 +18,8 @@ def conn_db(path="radio.sqlite3") -> Iterator[Database]:
     finally:
         conn.close()
 
+class RMError(Exception):
+    pass
 
 def insert_into_radio(
     radio: str,
