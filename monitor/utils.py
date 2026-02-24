@@ -18,8 +18,10 @@ def conn_db(path="radio.sqlite3") -> Iterator[Database]:
     finally:
         conn.close()
 
+
 class RMError(Exception):
     pass
+
 
 def insert_into_radio(
     radio: str,
@@ -151,8 +153,12 @@ def calc_score(otitle: str, operformer: str, title: str, performer: str) -> floa
     )
 
 
-def print_ascii_table(data: list[list[Any]], head=-1) -> None:
+def print_ascii_table(data: list[list[Any]], head: int | set = -1) -> None:
     """Prints a list of lists as an ASCII table."""
+    if isinstance(head, int):
+        heads = {head}
+    else:
+        heads = head
     # Determine the width of each column
     col_widths = [max(len(str(item)) for item in col) for col in zip(*data, strict=False)]
 
@@ -167,8 +173,52 @@ def print_ascii_table(data: list[list[Any]], head=-1) -> None:
     try:
         for i, row in enumerate(data):
             print(row_format.format(*row), flush=False)
-            if i == head:
+            if i in heads:
                 print(margin, flush=True)
         print(margin, flush=True)
     except TypeError:
         print_ascii_table([[str(cell) for cell in row] for row in data])
+
+
+def __print_diff_songs() -> None:
+    tinput = input("Diff songs - enter id: ").strip().lower()
+    try:
+        song_id_a = int(tinput)
+    except ValueError:
+        print("Edit terminated")
+        return
+    tinput = input("Diff songs - enter id: ").strip().lower()
+    try:
+        song_id_b = int(tinput)
+    except ValueError:
+        print("Edit terminated")
+        return
+    with conn_db() as conn:
+        def get_song(song_id: int) -> tuple[int, str, str, int | None, str | None] | None:
+            return conn.fetch_one_or_none(
+            tuple[int, str, str, int | None, str | None],
+            """SELECT song_id, song_title, song_performers, year, country
+                FROM song
+                WHERE song_id = ?""",
+            song_id,
+        )
+        song_a = get_song(song_id_a)
+        if not song_a:
+            print("First song not found")
+            return
+        song_b = get_song(song_id_b)
+        if not song_b:
+            print("Second song not found")
+            return
+        print_ascii_table(
+            [
+                ["v", "title", "performers", "year", "country", "score"],
+                [*list(song_a), calc_score(song_a[1], song_a[2], song_b[1], song_b[2])],
+                [*list(song_b), calc_score(song_b[1], song_b[2], song_a[1], song_a[2])],
+            ],
+            0,
+        )
+
+
+if __name__ == "__main__":
+    __print_diff_songs()
