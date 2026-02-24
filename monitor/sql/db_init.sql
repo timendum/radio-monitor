@@ -226,3 +226,25 @@ CREATE TABLE play_resolution (
 CREATE INDEX idx_resolution_song ON play_resolution(song_id);
 
 CREATE INDEX idx_resolution_status ON play_resolution(status);
+
+CREATE VIEW v_master_song
+AS
+SELECT
+    song.song_id as song_id,
+    song.song_title as song_title,
+    song.song_performers as song_performers,
+    song.year as year,
+    song.country as country,
+    (SELECT COUNT(*) FROM play_resolution AS pr
+        WHERE pr.song_id = song.song_id AND pr.status != 'pending'
+    ) as resolution_count
+FROM song
+WHERE EXISTS (
+    SELECT 1 FROM play_resolution AS pr
+    WHERE pr.song_id = song.song_id AND pr.status != 'pending'
+)
+AND NOT EXISTS (
+    SELECT 1 FROM song_work AS sw
+    WHERE sw.song_id = song.song_id
+)
+ORDER BY song.song_id ASC
