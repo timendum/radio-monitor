@@ -95,5 +95,11 @@ pyfix:
 check:
   @uv run --env-file .env python -m monitor.check_song
 
+dupes:
+  @uv run --env-file .env python -m monitor.dupes
+
+diff:
+  @uv run --env-file .env python -m monitor.utils
+
 clean:
   rm test_*.sqlite3
