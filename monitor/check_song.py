@@ -35,7 +35,7 @@ WHERE play_id = ?
     )
 
 
-class __FullCandidate(NamedTuple):
+class _FullCandidate(NamedTuple):
     title: str
     performers: str
     isrc: str | None
@@ -46,7 +46,7 @@ class __FullCandidate(NamedTuple):
     nuses: int
 
 
-def _print_cl(title: str, performer: str, cl: list[__FullCandidate]) -> None:
+def _print_cl(title: str, performer: str, cl: list[_FullCandidate]) -> None:
     print_ascii_table(
         [
             ["v", title, performer, "year", "country", "#uses"],
@@ -66,9 +66,9 @@ def _print_cl(title: str, performer: str, cl: list[__FullCandidate]) -> None:
     )
 
 
-def find_match_candidates(play_id: int, conn: "Database") -> list[__FullCandidate]:
+def find_match_candidates(play_id: int, conn: "Database") -> list[_FullCandidate]:
     return conn.fetch_many(
-        __FullCandidate,
+        _FullCandidate,
         """
 SELECT
     s.song_title,
@@ -105,8 +105,8 @@ def count_todo(last_id: int, conn: "Database") -> int:
 
 
 def solve_similar_candidates(
-    play_id: int, title: str, performer: str, rows: list[__FullCandidate]
-) -> __FullCandidate | None:
+    play_id: int, title: str, performer: str, rows: list[_FullCandidate]
+) -> _FullCandidate | None:
     clear_title = utils.clear_title(title)
     clear_performer = utils.clear_artist(performer)
     similar_oldest: tuple[None | int, int] = (None, -1)

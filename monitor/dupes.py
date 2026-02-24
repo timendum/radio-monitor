@@ -2,18 +2,14 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, NamedTuple
 
 from monitor import utils
-from monitor.utils import print_ascii_table
 from monitor.check_song import edit_song
+from monitor.utils import print_ascii_table
 
 if TYPE_CHECKING:
     from onlymaps import Database
 
-import logging
 
-logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
-
-
-class __FullSong(NamedTuple):
+class _FullSong(NamedTuple):
     song_id: int
     title: str
     performers: str
@@ -23,9 +19,9 @@ class __FullSong(NamedTuple):
     uses: int
 
 
-def find_song_tocheck(last_song_id: int, conn: "Database") -> "__FullSong | None":
+def find_song_tocheck(last_song_id: int, conn: "Database") -> "_FullSong | None":
     return conn.fetch_one_or_none(
-        __FullSong,
+        _FullSong,
         """
 SELECT
     song.song_id,
@@ -43,7 +39,7 @@ LIMIT 1""",
     )
 
 
-class __SongCandidate(NamedTuple):
+class _SongCandidate(NamedTuple):
     song_id: int
     title: str
     performers: str
@@ -52,9 +48,9 @@ class __SongCandidate(NamedTuple):
     uses: int
 
 
-def find_song_dupes(song_id: int, min_match_id: int, conn: "Database") -> list[__SongCandidate]:
+def find_song_dupes(song_id: int, min_match_id: int, conn: "Database") -> list[_SongCandidate]:
     return conn.fetch_many(
-        __SongCandidate,
+        _SongCandidate,
         """
 SELECT
     song.song_id,
@@ -121,8 +117,8 @@ def join_songs(song_ids: set[int], conn: "Database") -> bool:
     return True
 
 
-def sort_cand(candidates: list[__SongCandidate], song: __FullSong) -> list[__SongCandidate]:
-    scandidates: list[tuple[float, __SongCandidate]] = [
+def sort_cand(candidates: list[_SongCandidate], song: _FullSong) -> list[_SongCandidate]:
+    scandidates: list[tuple[float, _SongCandidate]] = [
         (
             utils.calc_score(
                 c.title,

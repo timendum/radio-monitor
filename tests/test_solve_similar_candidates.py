@@ -1,25 +1,12 @@
 import unittest
 
-from monitor.check_song import solve_similar_candidates
+from monitor.check_song import _FullCandidate, solve_similar_candidates
 
 
 class SolveSimilarCandidatesTestCase(unittest.TestCase):
     def _make_candidate(self, title, performers, year=None, song_id=1, nuses=0):
         """Helper to create mock candidate tuples"""
-        return type(
-            "Candidate",
-            (),
-            {
-                "title": title,
-                "performers": performers,
-                "isrc": None,
-                "year": year,
-                "country": None,
-                "duration": None,
-                "song_id": song_id,
-                "nuses": nuses,
-            },
-        )()
+        return _FullCandidate(title, performers, None, year, None, None, song_id, nuses)
 
     def test_single_perfect_match(self):
         """Test with one perfect match"""
